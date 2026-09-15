@@ -20,6 +20,7 @@ func (ApiKey) Mixin() []ent.Mixin {
 
 func (ApiKey) Fields() []ent.Field {
 	return []ent.Field{
+		field.Enum("scope").NamedValues("CMS", "cms", "ContentRead", "content:read").Default("cms"),
 		field.String("name").
 			NotEmpty(),
 		// 只存 SHA-256 雜湊，明文只在簽發當下回傳一次

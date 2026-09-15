@@ -28,6 +28,7 @@ import (
 
 	"github.com/hcchien/nl/auth"
 	"github.com/hcchien/nl/ent"
+	"github.com/hcchien/nl/postrender"
 	"github.com/hcchien/nl/server"
 
 	// 註冊 lists 宣告（access/meta 於執行期從 nl registry 導出）
@@ -86,6 +87,18 @@ func main() {
 	} else {
 		server.Attach(client)
 		log.Println("auto-migrate disabled (NL_AUTO_MIGRATE=false); use `nl-server migrate plan|apply`")
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "render" {
+		if len(os.Args) < 3 || os.Args[2] != "rebuild" || len(os.Args) > 4 || (len(os.Args) == 4 && os.Args[3] != "--all") {
+			log.Fatal("usage: nl-server render rebuild [--all]")
+		}
+		result, err := postrender.Rebuild(auth.WithSystem(ctx), client, len(os.Args) == 4)
+		if err != nil {
+			log.Fatalf("HTML rebuild failed after %d updates: %v", result.Updated, err)
+		}
+		log.Printf("HTML rebuild: %d updated, %d skipped concurrent edits", result.Updated, result.Skipped)
+		return
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "seed" {

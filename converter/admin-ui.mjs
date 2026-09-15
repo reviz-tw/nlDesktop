@@ -59,9 +59,12 @@ function initEditor(container) {
   const editor = new Editor({
     element: mount,
     extensions,
+    editable: container.dataset.readonly !== 'true',
+    editorProps: { attributes: { role: 'textbox', 'aria-label': container.dataset.label, 'aria-multiline': 'true' } },
     content,
     onUpdate({ editor }) {
       input.value = editor.isEmpty ? '' : JSON.stringify(editor.getJSON())
+      input.dispatchEvent(new Event('input', { bubbles: true }))
       refresh()
     },
     onSelectionUpdate: () => refresh(),
@@ -72,12 +75,14 @@ function initEditor(container) {
     b.type = 'button'
     b.textContent = item.label
     b.title = item.title
+    b.setAttribute('aria-label', item.title)
+    b.disabled = container.dataset.readonly === 'true'
     b.addEventListener('click', () => item.cmd(editor))
     bar.appendChild(b)
     return { b, item }
   })
   function refresh() {
-    for (const { b, item } of buttons) b.classList.toggle('on', item.active(editor))
+    for (const { b, item } of buttons) { b.classList.toggle('on', item.active(editor)); b.setAttribute('aria-pressed', String(item.active(editor))) }
   }
   refresh()
 }
@@ -118,6 +123,7 @@ function initPicker(container) {
     chip.querySelector('button').addEventListener('click', () => {
       chip.remove()
       hidden.remove()
+      search.dispatchEvent(new Event('change', { bubbles: true }))
     })
     chips.appendChild(chip)
     container.appendChild(hidden)
@@ -134,31 +140,47 @@ function initPicker(container) {
   } catch { /* noop */ }
 
   let timer = null
-  search.addEventListener('input', () => {
-    clearTimeout(timer)
-    timer = setTimeout(async () => {
-      const q = search.value.trim()
-      results.innerHTML = ''
-      if (q === '') return
-      const resp = await fetch(`/admin/api/options?list=${encodeURIComponent(list)}&q=${encodeURIComponent(q)}`)
-      if (!resp.ok) return
-      const options = await resp.json()
+  let controller = null
+  const close = () => { controller?.abort(); results.replaceChildren(); search.setAttribute('aria-expanded', 'false') }
+  search.setAttribute('aria-expanded', 'false')
+  async function lookup() {
+    controller?.abort()
+    controller = new AbortController()
+    results.replaceChildren()
+    try {
+      const resp = await fetch(`/admin/api/options?list=${encodeURIComponent(list)}&q=${encodeURIComponent(search.value.trim())}`, { signal: controller.signal })
+      if (!resp.ok || resp.redirected) throw new Error('無法載入項目，請確認登入狀態')
+      const options = (await resp.json()).filter(opt => !ids().includes(String(opt.id)))
+      search.setAttribute('aria-expanded', 'true')
       for (const opt of options) {
         const row = document.createElement('button')
-        row.type = 'button'
-        row.className = 'relopt'
-        row.textContent = opt.label
+        row.type = 'button'; row.className = 'relopt'; row.textContent = opt.label
         row.addEventListener('click', () => {
-          addChip(opt.id, opt.label)
-          search.value = ''
-          results.innerHTML = ''
+          addChip(opt.id, opt.label); search.value = ''; close()
+          search.dispatchEvent(new Event('change', { bubbles: true }))
+          search.focus(); close()
         })
         results.appendChild(row)
       }
-      if (!options.length) results.innerHTML = '<div class="relempty">（無符合項目）</div>'
-    }, 200)
+      if (!options.length) results.innerHTML = '<div class="relempty">沒有符合的項目</div>'
+    } catch (err) {
+      if (err.name !== 'AbortError') { const message = document.createElement('div'); message.className = 'relempty'; message.textContent = '無法載入項目，請稍後再試'; results.replaceChildren(message) }
+    }
+  }
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(lookup, 200) })
+  search.addEventListener('focus', lookup)
+  container.addEventListener('focusout', e => { if (!container.contains(e.relatedTarget)) {clearTimeout(timer);close()} })
+  container.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {close();search.focus();close()}
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const options = [...results.querySelectorAll('button')]
+      if (!options.length) return
+      e.preventDefault()
+      const i = options.indexOf(document.activeElement)
+      const next = e.key === 'ArrowDown' ? (i + 1) % options.length : (i - 1 + options.length) % options.length
+      options[next].focus()
+    }
   })
-  search.addEventListener('blur', () => setTimeout(() => (results.innerHTML = ''), 200))
 }
 
 function escapeHTML(s) {
@@ -168,6 +190,72 @@ function escapeHTML(s) {
 export function init() {
   document.querySelectorAll('.rt').forEach(initEditor)
   document.querySelectorAll('.relpicker').forEach(initPicker)
+  initPage()
+}
+
+function initPage() {
+  if (matchMedia('(max-width:760px)').matches) document.querySelector('.nav-item[aria-current=page]')?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  const controls = document.querySelector('.list-controls')
+  controls?.querySelectorAll('[name="filter"]').forEach(input => input.addEventListener('change', () => controls.requestSubmit()))
+  const bulk = document.querySelector('.bulk-form')
+  if (bulk) {
+    const boxes = [...bulk.querySelectorAll('[name="ids"]')]
+    const all = bulk.querySelector('[data-select-all]')
+    const bar = bulk.querySelector('.bulk-bar')
+    function sync() {
+      const count = boxes.filter(x => x.checked).length
+      if (bar) {bar.hidden = count === 0; bar.querySelector('[data-selected-count]').textContent = count}
+      if (all) {all.checked = count > 0 && count === boxes.length; all.indeterminate = count > 0 && count < boxes.length}
+    }
+    boxes.forEach(x => x.addEventListener('change', sync))
+    all?.addEventListener('change', () => {boxes.forEach(x => {x.checked = all.checked});sync()})
+    bulk.querySelector('.clear-selection')?.addEventListener('click', () => {boxes.forEach(x => {x.checked = false});sync()})
+    bulk.addEventListener('submit', e => {
+      const count = boxes.filter(x => x.checked).length
+      if (!count) {e.preventDefault();return}
+      const action = e.submitter?.value
+      if (['delete','published'].includes(action) && !confirm(action === 'delete' ? `確定刪除 ${count} 筆資料？此操作無法復原。` : `確定發佈 ${count} 篇文章？尚未設定發佈時間的文章將使用目前時間。`)) e.preventDefault()
+    })
+  }
+  const form = document.querySelector('form.item')
+  if (!form) return
+  const status = form.querySelector('[data-save-status]')
+  let dirty = false
+  let submitting = false
+  const changed = () => {dirty = true;status.textContent = '尚有未儲存的變更'}
+  form.addEventListener('input', changed)
+  form.addEventListener('change', changed)
+  form.addEventListener('submit', () => {submitting = true;status.textContent = '儲存中…'})
+  window.addEventListener('beforeunload', e => {if (dirty && !submitting) {e.preventDefault();e.returnValue = ''}})
+  form.querySelectorAll('select').forEach(select => select.addEventListener('change', () => {
+    const badge = select.parentElement.querySelector('[data-state-badge]')
+    if (badge) {badge.textContent = select.selectedOptions[0].textContent;badge.className = `status-pill ${select.value}`}
+  }))
+  let expanded = null
+  const collapse = () => {
+    if (!expanded) return
+    expanded.closest('.rich-field').classList.remove('fullscreen')
+    expanded.textContent = '⛶ 展開全螢幕';expanded.setAttribute('aria-expanded', 'false')
+    expanded.focus();expanded = null
+  }
+  form.querySelectorAll('[data-expand]').forEach(button => {
+    button.setAttribute('aria-expanded', 'false')
+    button.addEventListener('click', () => {
+      if (expanded === button) {collapse();return}
+      collapse();expanded = button
+      button.closest('.rich-field').classList.add('fullscreen')
+      button.textContent = '× 關閉全螢幕';button.setAttribute('aria-expanded', 'true')
+    })
+  })
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && expanded) {e.preventDefault();collapse()}
+    if (e.key === 'Tab' && expanded) {
+      const focusable = [...expanded.closest('.rich-field').querySelectorAll('button:not([disabled]), [contenteditable="true"]')]
+      const first = focusable[0], last = focusable[focusable.length-1]
+      if (e.shiftKey && document.activeElement === first) {e.preventDefault();last.focus()}
+      else if (!e.shiftKey && document.activeElement === last) {e.preventDefault();first.focus()}
+    }
+  })
 }
 
 init()

@@ -24,3 +24,17 @@ extend type Mutation {
   """為目前登入的使用者簽發 API key（供 MCP / server-to-server）"""
   createApiKey(name: String!): ApiKeyPayload!
 }
+
+"""網站專用金鑰；key 僅簽發時回傳，id 用於撤銷。"""
+type ContentApiKeyPayload {
+  id: ID!
+  name: String!
+  key: String!
+}
+
+extend type Mutation {
+  """admin/moderator 簽發僅適用 /graphql/content 的 content:read 金鑰。"""
+  createContentApiKey(name: String!): ContentApiKeyPayload!
+  """admin/moderator 撤銷網站金鑰，已撤銷或不存在回傳 false。"""
+  revokeContentApiKey(id: ID!): Boolean!
+}

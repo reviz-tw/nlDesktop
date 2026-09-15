@@ -64,6 +64,26 @@ func (_u *PostUpdate) ClearContent() *PostUpdate {
 	return _u
 }
 
+// SetContentHTML sets the "content_html" field.
+func (_u *PostUpdate) SetContentHTML(v string) *PostUpdate {
+	_u.mutation.SetContentHTML(v)
+	return _u
+}
+
+// SetNillableContentHTML sets the "content_html" field if the given value is not nil.
+func (_u *PostUpdate) SetNillableContentHTML(v *string) *PostUpdate {
+	if v != nil {
+		_u.SetContentHTML(*v)
+	}
+	return _u
+}
+
+// ClearContentHTML clears the value of the "content_html" field.
+func (_u *PostUpdate) ClearContentHTML() *PostUpdate {
+	_u.mutation.ClearContentHTML()
+	return _u
+}
+
 // SetOtherByline sets the "other_byline" field.
 func (_u *PostUpdate) SetOtherByline(v string) *PostUpdate {
 	_u.mutation.SetOtherByline(v)
@@ -101,6 +121,33 @@ func (_u *PostUpdate) SetNillablePublishTime(v *time.Time) *PostUpdate {
 // ClearPublishTime clears the value of the "publish_time" field.
 func (_u *PostUpdate) ClearPublishTime() *PostUpdate {
 	_u.mutation.ClearPublishTime()
+	return _u
+}
+
+// SetRenderVersion sets the "render_version" field.
+func (_u *PostUpdate) SetRenderVersion(v int) *PostUpdate {
+	_u.mutation.ResetRenderVersion()
+	_u.mutation.SetRenderVersion(v)
+	return _u
+}
+
+// SetNillableRenderVersion sets the "render_version" field if the given value is not nil.
+func (_u *PostUpdate) SetNillableRenderVersion(v *int) *PostUpdate {
+	if v != nil {
+		_u.SetRenderVersion(*v)
+	}
+	return _u
+}
+
+// AddRenderVersion adds value to the "render_version" field.
+func (_u *PostUpdate) AddRenderVersion(v int) *PostUpdate {
+	_u.mutation.AddRenderVersion(v)
+	return _u
+}
+
+// ClearRenderVersion clears the value of the "render_version" field.
+func (_u *PostUpdate) ClearRenderVersion() *PostUpdate {
+	_u.mutation.ClearRenderVersion()
 	return _u
 }
 
@@ -454,6 +501,12 @@ func (_u *PostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.ContentCleared() {
 		_spec.ClearField(post.FieldContent, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ContentHTML(); ok {
+		_spec.SetField(post.FieldContentHTML, field.TypeString, value)
+	}
+	if _u.mutation.ContentHTMLCleared() {
+		_spec.ClearField(post.FieldContentHTML, field.TypeString)
+	}
 	if value, ok := _u.mutation.OtherByline(); ok {
 		_spec.SetField(post.FieldOtherByline, field.TypeString, value)
 	}
@@ -465,6 +518,15 @@ func (_u *PostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.PublishTimeCleared() {
 		_spec.ClearField(post.FieldPublishTime, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RenderVersion(); ok {
+		_spec.SetField(post.FieldRenderVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRenderVersion(); ok {
+		_spec.AddField(post.FieldRenderVersion, field.TypeInt, value)
+	}
+	if _u.mutation.RenderVersionCleared() {
+		_spec.ClearField(post.FieldRenderVersion, field.TypeInt)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(post.FieldState, field.TypeEnum, value)
@@ -795,6 +857,26 @@ func (_u *PostUpdateOne) ClearContent() *PostUpdateOne {
 	return _u
 }
 
+// SetContentHTML sets the "content_html" field.
+func (_u *PostUpdateOne) SetContentHTML(v string) *PostUpdateOne {
+	_u.mutation.SetContentHTML(v)
+	return _u
+}
+
+// SetNillableContentHTML sets the "content_html" field if the given value is not nil.
+func (_u *PostUpdateOne) SetNillableContentHTML(v *string) *PostUpdateOne {
+	if v != nil {
+		_u.SetContentHTML(*v)
+	}
+	return _u
+}
+
+// ClearContentHTML clears the value of the "content_html" field.
+func (_u *PostUpdateOne) ClearContentHTML() *PostUpdateOne {
+	_u.mutation.ClearContentHTML()
+	return _u
+}
+
 // SetOtherByline sets the "other_byline" field.
 func (_u *PostUpdateOne) SetOtherByline(v string) *PostUpdateOne {
 	_u.mutation.SetOtherByline(v)
@@ -832,6 +914,33 @@ func (_u *PostUpdateOne) SetNillablePublishTime(v *time.Time) *PostUpdateOne {
 // ClearPublishTime clears the value of the "publish_time" field.
 func (_u *PostUpdateOne) ClearPublishTime() *PostUpdateOne {
 	_u.mutation.ClearPublishTime()
+	return _u
+}
+
+// SetRenderVersion sets the "render_version" field.
+func (_u *PostUpdateOne) SetRenderVersion(v int) *PostUpdateOne {
+	_u.mutation.ResetRenderVersion()
+	_u.mutation.SetRenderVersion(v)
+	return _u
+}
+
+// SetNillableRenderVersion sets the "render_version" field if the given value is not nil.
+func (_u *PostUpdateOne) SetNillableRenderVersion(v *int) *PostUpdateOne {
+	if v != nil {
+		_u.SetRenderVersion(*v)
+	}
+	return _u
+}
+
+// AddRenderVersion adds value to the "render_version" field.
+func (_u *PostUpdateOne) AddRenderVersion(v int) *PostUpdateOne {
+	_u.mutation.AddRenderVersion(v)
+	return _u
+}
+
+// ClearRenderVersion clears the value of the "render_version" field.
+func (_u *PostUpdateOne) ClearRenderVersion() *PostUpdateOne {
+	_u.mutation.ClearRenderVersion()
 	return _u
 }
 
@@ -1215,6 +1324,12 @@ func (_u *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) {
 	if _u.mutation.ContentCleared() {
 		_spec.ClearField(post.FieldContent, field.TypeJSON)
 	}
+	if value, ok := _u.mutation.ContentHTML(); ok {
+		_spec.SetField(post.FieldContentHTML, field.TypeString, value)
+	}
+	if _u.mutation.ContentHTMLCleared() {
+		_spec.ClearField(post.FieldContentHTML, field.TypeString)
+	}
 	if value, ok := _u.mutation.OtherByline(); ok {
 		_spec.SetField(post.FieldOtherByline, field.TypeString, value)
 	}
@@ -1226,6 +1341,15 @@ func (_u *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) {
 	}
 	if _u.mutation.PublishTimeCleared() {
 		_spec.ClearField(post.FieldPublishTime, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RenderVersion(); ok {
+		_spec.SetField(post.FieldRenderVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRenderVersion(); ok {
+		_spec.AddField(post.FieldRenderVersion, field.TypeInt, value)
+	}
+	if _u.mutation.RenderVersionCleared() {
+		_spec.ClearField(post.FieldRenderVersion, field.TypeInt)
 	}
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(post.FieldState, field.TypeEnum, value)

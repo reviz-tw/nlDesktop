@@ -596,8 +596,10 @@ type Post implements Node {
   updatedAt: Time!
   brief: JSON
   content: JSON
+  contentHtml: String
   otherByline: String
   publishTime: Time
+  renderVersion: Int
   state: PostState!
   subtitle: String
   title: String!

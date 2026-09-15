@@ -29,10 +29,14 @@ type Post struct {
 	Brief map[string]interface{} `json:"brief,omitempty"`
 	// Content holds the value of the "content" field.
 	Content map[string]interface{} `json:"content,omitempty"`
+	// ContentHTML holds the value of the "content_html" field.
+	ContentHTML string `json:"content_html,omitempty"`
 	// OtherByline holds the value of the "other_byline" field.
 	OtherByline string `json:"other_byline,omitempty"`
 	// PublishTime holds the value of the "publish_time" field.
 	PublishTime *time.Time `json:"publish_time,omitempty"`
+	// RenderVersion holds the value of the "render_version" field.
+	RenderVersion int `json:"render_version,omitempty"`
 	// State holds the value of the "state" field.
 	State post.State `json:"state,omitempty"`
 	// Subtitle holds the value of the "subtitle" field.
@@ -152,9 +156,9 @@ func (*Post) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case post.FieldBrief, post.FieldContent:
 			values[i] = new([]byte)
-		case post.FieldID:
+		case post.FieldID, post.FieldRenderVersion:
 			values[i] = new(sql.NullInt64)
-		case post.FieldOtherByline, post.FieldState, post.FieldSubtitle, post.FieldTitle:
+		case post.FieldContentHTML, post.FieldOtherByline, post.FieldState, post.FieldSubtitle, post.FieldTitle:
 			values[i] = new(sql.NullString)
 		case post.FieldCreatedAt, post.FieldUpdatedAt, post.FieldPublishTime:
 			values[i] = new(sql.NullTime)
@@ -213,6 +217,12 @@ func (_m *Post) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field content: %w", err)
 				}
 			}
+		case post.FieldContentHTML:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field content_html", values[i])
+			} else if value.Valid {
+				_m.ContentHTML = value.String
+			}
 		case post.FieldOtherByline:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field other_byline", values[i])
@@ -225,6 +235,12 @@ func (_m *Post) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.PublishTime = new(time.Time)
 				*_m.PublishTime = value.Time
+			}
+		case post.FieldRenderVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field render_version", values[i])
+			} else if value.Valid {
+				_m.RenderVersion = int(value.Int64)
 			}
 		case post.FieldState:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -348,6 +364,9 @@ func (_m *Post) String() string {
 	builder.WriteString("content=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Content))
 	builder.WriteString(", ")
+	builder.WriteString("content_html=")
+	builder.WriteString(_m.ContentHTML)
+	builder.WriteString(", ")
 	builder.WriteString("other_byline=")
 	builder.WriteString(_m.OtherByline)
 	builder.WriteString(", ")
@@ -355,6 +374,9 @@ func (_m *Post) String() string {
 		builder.WriteString("publish_time=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("render_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RenderVersion))
 	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(fmt.Sprintf("%v", _m.State))

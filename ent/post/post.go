@@ -25,10 +25,14 @@ const (
 	FieldBrief = "brief"
 	// FieldContent holds the string denoting the content field in the database.
 	FieldContent = "content"
+	// FieldContentHTML holds the string denoting the content_html field in the database.
+	FieldContentHTML = "content_html"
 	// FieldOtherByline holds the string denoting the other_byline field in the database.
 	FieldOtherByline = "other_byline"
 	// FieldPublishTime holds the string denoting the publish_time field in the database.
 	FieldPublishTime = "publish_time"
+	// FieldRenderVersion holds the string denoting the render_version field in the database.
+	FieldRenderVersion = "render_version"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// FieldSubtitle holds the string denoting the subtitle field in the database.
@@ -98,8 +102,10 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldBrief,
 	FieldContent,
+	FieldContentHTML,
 	FieldOtherByline,
 	FieldPublishTime,
+	FieldRenderVersion,
 	FieldState,
 	FieldSubtitle,
 	FieldTitle,
@@ -150,6 +156,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultRenderVersion holds the default value on creation for the "render_version" field.
+	DefaultRenderVersion int
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
 )
@@ -201,6 +209,11 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByContentHTML orders the results by the content_html field.
+func ByContentHTML(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldContentHTML, opts...).ToFunc()
+}
+
 // ByOtherByline orders the results by the other_byline field.
 func ByOtherByline(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOtherByline, opts...).ToFunc()
@@ -209,6 +222,11 @@ func ByOtherByline(opts ...sql.OrderTermOption) OrderOption {
 // ByPublishTime orders the results by the publish_time field.
 func ByPublishTime(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPublishTime, opts...).ToFunc()
+}
+
+// ByRenderVersion orders the results by the render_version field.
+func ByRenderVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRenderVersion, opts...).ToFunc()
 }
 
 // ByState orders the results by the state field.

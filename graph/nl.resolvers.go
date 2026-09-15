@@ -7,9 +7,11 @@ package graph
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hcchien/nl/auth"
 	"github.com/hcchien/nl/ent"
+	"github.com/hcchien/nl/ent/apikey"
 	"github.com/hcchien/nl/ent/user"
 	"github.com/hcchien/nl/graph/model"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -44,6 +46,35 @@ func (r *mutationResolver) CreateAPIKey(ctx context.Context, name string) (*mode
 		return nil, err
 	}
 	return &model.APIKeyPayload{Key: plain, Name: name}, nil
+}
+
+// CreateContentAPIKey is the resolver for the createContentApiKey field.
+func (r *mutationResolver) CreateContentAPIKey(ctx context.Context, name string) (*model.ContentAPIKeyPayload, error) {
+	v := auth.ViewerFrom(ctx)
+	if v == nil || (v.Role != "admin" && v.Role != "moderator") {
+		return nil, gqlerror.Errorf("access denied: only admin/moderator can issue content keys")
+	}
+	name = strings.TrimSpace(name)
+	if name == "" || len(name) > 200 {
+		return nil, gqlerror.Errorf("name must be 1..200 bytes")
+	}
+	plain, hash := auth.NewAPIKey()
+	key, err := r.Client.ApiKey.Create().SetName(name).SetKeyHash(hash).
+		SetScope(apikey.ScopeContentRead).SetUserID(v.ID).Save(auth.WithSystem(ctx))
+	if err != nil {
+		return nil, err
+	}
+	return &model.ContentAPIKeyPayload{ID: key.ID, Name: key.Name, Key: plain}, nil
+}
+
+// RevokeContentAPIKey is the resolver for the revokeContentApiKey field.
+func (r *mutationResolver) RevokeContentAPIKey(ctx context.Context, id int) (bool, error) {
+	v := auth.ViewerFrom(ctx)
+	if v == nil || (v.Role != "admin" && v.Role != "moderator") {
+		return false, gqlerror.Errorf("access denied: only admin/moderator can revoke content keys")
+	}
+	n, err := r.Client.ApiKey.Delete().Where(apikey.IDEQ(id), apikey.ScopeEQ(apikey.ScopeContentRead)).Exec(auth.WithSystem(ctx))
+	return n > 0, err
 }
 
 // Me is the resolver for the me field.

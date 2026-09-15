@@ -13,6 +13,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "scope", Type: field.TypeEnum, Enums: []string{"cms", "content:read"}, Default: "cms"},
 		{Name: "name", Type: field.TypeString},
 		{Name: "key_hash", Type: field.TypeString, Unique: true},
 		{Name: "api_key_user", Type: field.TypeInt},
@@ -25,7 +26,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_keys_users_user",
-				Columns:    []*schema.Column{APIKeysColumns[5]},
+				Columns:    []*schema.Column{APIKeysColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -165,8 +166,10 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "brief", Type: field.TypeJSON, Nullable: true},
 		{Name: "content", Type: field.TypeJSON, Nullable: true},
+		{Name: "content_html", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "other_byline", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "publish_time", Type: field.TypeTime, Nullable: true},
+		{Name: "render_version", Type: field.TypeInt, Nullable: true, Default: 0},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"draft", "scheduled", "published", "archived", "invisible"}, Default: "draft"},
 		{Name: "subtitle", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "title", Type: field.TypeString, Size: 2147483647},
@@ -182,19 +185,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "posts_photos_hero_image",
-				Columns:    []*schema.Column{PostsColumns[10]},
+				Columns:    []*schema.Column{PostsColumns[12]},
 				RefColumns: []*schema.Column{PhotosColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "posts_sections_section",
-				Columns:    []*schema.Column{PostsColumns[11]},
+				Columns:    []*schema.Column{PostsColumns[13]},
 				RefColumns: []*schema.Column{SectionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "posts_users_created_by",
-				Columns:    []*schema.Column{PostsColumns[12]},
+				Columns:    []*schema.Column{PostsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

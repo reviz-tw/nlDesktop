@@ -27,6 +27,7 @@ func main() {
 	for _, cmd := range [][]string{
 		{"go", "generate", "./ent"},
 		{"go", "tool", "gqlgen", "generate"},
+		{"go", "tool", "gqlgen", "generate", "--config", "contentgraph/gqlgen.yml"},
 	} {
 		c := exec.Command(cmd[0], cmd[1:]...)
 		c.Stdout, c.Stderr = os.Stdout, os.Stderr

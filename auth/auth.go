@@ -32,6 +32,7 @@ type ctxKey int
 const (
 	viewerKey ctxKey = iota
 	systemKey
+	contentReaderKey
 )
 
 // WithViewer 將 viewer 注入 context。
@@ -176,4 +177,15 @@ func HashAPIKey(plain string) string {
 // IsAPIKey 判斷 bearer token 是否為 API key 格式。
 func IsAPIKey(token string) bool {
 	return strings.HasPrefix(token, "nlk_")
+}
+
+// WithContentReader marks a request authenticated by a content:read credential.
+// It deliberately carries no CMS user role. All reads use one publication cutoff.
+func WithContentReader(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contentReaderKey, time.Now())
+}
+
+func ContentReadTime(ctx context.Context) (time.Time, bool) {
+	t, ok := ctx.Value(contentReaderKey).(time.Time)
+	return t, ok
 }

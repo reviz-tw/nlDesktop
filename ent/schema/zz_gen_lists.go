@@ -99,8 +99,10 @@ func (Post) Fields() []ent.Field {
 	return []ent.Field{
 		field.JSON("brief", map[string]interface{}{}).Optional().Annotations(entgql.Type("JSON")),
 		field.JSON("content", map[string]interface{}{}).Optional().Annotations(entgql.Type("JSON")),
+		field.Text("content_html").Optional().Annotations(entgql.Skip(entgql.SkipMutationCreateInput | entgql.SkipMutationUpdateInput | entgql.SkipWhereInput), entgql.MapsTo("contentHtml")),
 		field.Text("other_byline").Optional(),
 		field.Time("publish_time").Optional().Nillable().Annotations(entgql.OrderField("PUBLISH_TIME")),
+		field.Int("render_version").Default(0).Optional().Annotations(entgql.Skip(entgql.SkipMutationCreateInput | entgql.SkipMutationUpdateInput | entgql.SkipWhereInput), entgql.MapsTo("renderVersion")),
 		field.Enum("state").Values("draft", "scheduled", "published", "archived", "invisible").Default("draft"),
 		field.Text("subtitle").Optional(),
 		field.Text("title").NotEmpty(),

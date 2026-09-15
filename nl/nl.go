@@ -32,6 +32,7 @@ const (
 type Field struct {
 	Type     FieldType
 	Required bool
+	ReadOnly bool // Server-derived: queryable, excluded from mutation inputs and editing.
 	Unique   bool
 	Default  any      // select/boolean 預設值
 	Enum     []string // select 選項

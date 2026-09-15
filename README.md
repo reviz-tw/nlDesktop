@@ -146,6 +146,17 @@ go run ./cmd/nl gen   # 展開 ent schema / GraphQL mutations / resolvers / owne
   Markdown 字串（agent 丟 Word/GDoc 轉出的 HTML 即可），nl-mcp 自動經 converter
   轉成 PM JSON；也可直接給 doc JSON 物件。`NL_RICHTEXT_URL` 指定 converter 位址。
 
+## 網站閱讀用 HTML
+
+`Post.contentHtml` 是由 `content` JSON 自動產生並儲存的語意化 HTML，
+`renderVersion` 記錄產生器版本。網站可直接查詢這兩個唯讀欄位，讀取時不需轉換；
+CMS／GraphQL／MCP 寫入 content 時會同步更新，清空內容也會清空 HTML。
+網站配色、字體與間距由 CSS 控制，改樣式不需重產內容。
+
+既有資料或 renderer 升版後執行 `./nl-server render rebuild`；
+需要刷新所有圖片參照或現有輸出時執行 `./nl-server render rebuild --all`。
+詳細 API、固定 class、媒體處理與部署流程見 [網站 HTML 契約](docs/content-html.md)。
+
 ## Admin UI
 
 `http://localhost:8080/admin` —— server-rendered、schema-driven 的管理後台：
@@ -153,6 +164,16 @@ go run ./cmd/nl gen   # 展開 ent schema / GraphQL mutations / resolvers / owne
 **所有操作經 in-process GraphQL、帶登入者自己的 token**，權限與 API/MCP 完全一致，
 admin 沒有特權路徑（editor 登入只看得到自己的文章、contributor 打 /admin/l/User
 會被資料層擋下）。
+
+- **Nocturne 介面**：登入、七種 lists 的列表與新增／編輯表單共用深色設計 tokens，
+  桌面側欄與窄螢幕橫向導覽顯示登入者可見的資料筆數。
+- 列表支援名稱／標題搜尋、Post 狀態／User 角色／Tag 精選篩選、更新時間排序與 cursor 分頁。
+  批次操作可發佈／設為草稿、設定精選與刪除；每筆透過登入者的 GraphQL 權限驗證，
+  部分失敗會列出結果。批次發佈僅為尚無 publishTime 的文章補上目前時間。
+- 編輯頁提供固定儲存列、未儲存提醒、全螢幕富文字編輯及儲存失敗的內容保留。
+  User 的密碼欄位直接更新現有密碼，留空不變更。
+- 視覺樣式位於 `admin/static/nocturne.css`（design tokens／共用元件）與
+  `admin/static/cms.css`（CMS layout／responsive）；互動來源為 `converter/admin-ui.mjs`。
 
 - **richText = 內嵌 Tiptap 所見即所得編輯器**（粗體/斜體/標題/清單/引用/連結/YouTube）。
   編輯器 bundle 由 converter 以**同一份 schema**（[converter/schema.mjs](converter/schema.mjs)）
@@ -252,3 +273,11 @@ cmd/nl         框架 CLI（nl gen）
 cmd/nl-server  CMS server 執行檔（migration + seed + serve）
 cmd/nl-mcp     MCP server 執行檔（獨立部署，stdio / HTTP）
 ```
+
+### 網站專用 GraphQL
+
+`/graphql/content` 提供公開文章與分類的獨立唯讀 schema，使用專用 `content:read` API key。
+由 admin/moderator 在 `/graphql` 呼叫 `createContentApiKey` 簽發，或 `revokeContentApiKey` 撤銷。
+網站金鑰無法存取後台資料；單篇、列表與關聯均套用發布狀態及時間限制。
+
+查詢範例、完整授權規則與部署步驟見 [網站內容 API](docs/content-api.md)。

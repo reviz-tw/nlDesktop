@@ -14,6 +14,7 @@ import (
 	"github.com/hcchien/nl/ent/post"
 	"github.com/hcchien/nl/meta"
 	"github.com/hcchien/nl/nl"
+	"github.com/hcchien/nl/postrender"
 	"github.com/hcchien/nl/richtext"
 )
 
@@ -26,6 +27,7 @@ import (
 func Setup(c *gen.Client) {
 	c.Intercept(queryInterceptor())
 	c.Use(mutationHook())
+	c.Post.Use(postrender.Hook())
 }
 
 // Denied 表示權限不足的錯誤。
@@ -46,6 +48,9 @@ func roleOf(ctx context.Context) string {
 
 func queryInterceptor() gen.Interceptor {
 	return intercept.Func(func(ctx context.Context, q intercept.Query) error {
+		if at, ok := auth.ContentReadTime(ctx); ok {
+			return contentQueryFilter(q, at)
+		}
 		if auth.IsSystem(ctx) {
 			return nil
 		}
@@ -107,6 +112,9 @@ func mutationHook() gen.Hook {
 	return func(next gen.Mutator) gen.Mutator {
 		return gen.MutateFunc(func(ctx context.Context, m gen.Mutation) (gen.Value, error) {
 			list := m.Type()
+			if _, ok := auth.ContentReadTime(ctx); ok {
+				return nil, deniedf("access denied: content:read cannot mutate")
+			}
 			// 資料完整性（不分 system / viewer，一律執行）：
 			// 密碼以雜湊落地、richText 僅允許白名單內的 node/mark
 			if um, ok := m.(*gen.UserMutation); ok {

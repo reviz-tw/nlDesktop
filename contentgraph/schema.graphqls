@@ -1,0 +1,78 @@
+"""公開內容介面：所有查詢都需要 content:read 金鑰。"""
+type Query {
+  post(id: ID!): PublicPost
+  posts(first: Int! = 20, offset: Int! = 0, sectionSlug: String, categorySlug: String, tagId: ID): PublicPostPage!
+  sections(first: Int! = 50, offset: Int! = 0): [PublicSection!]!
+  categories(first: Int! = 50, offset: Int! = 0): [PublicCategory!]!
+  tags(first: Int! = 50, offset: Int! = 0): [PublicTag!]!
+}
+scalar Time
+scalar JSON
+
+type PublicPostPage {
+  items: [PublicPost!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+type PublicPost {
+  id: ID!
+  title: String!
+  subtitle: String!
+  """公開前言，沿用 CMS 的 ProseMirror JSON。"""
+  brief: JSON
+  contentHtml: String!
+  renderVersion: Int!
+  publishTime: Time!
+  updatedAt: Time!
+  otherByline: String!
+  heroImage: PublicPhoto
+  section: PublicSection
+  categories: [PublicCategory!]!
+  tags: [PublicTag!]!
+  writers: [PublicAuthor!]!
+  relatedPosts: [PublicPostSummary!]!
+}
+
+type PublicPostSummary {
+  id: ID!
+  title: String!
+  subtitle: String!
+  publishTime: Time!
+}
+
+type PublicPhoto {
+  id: ID!
+  name: String!
+  description: String!
+  url: String!
+}
+
+type PublicAuthor {
+  id: ID!
+  name: String!
+  bio: String!
+  image: PublicPhoto
+}
+
+type PublicSection {
+  id: ID!
+  slug: String!
+  name: String!
+  description: String!
+}
+
+type PublicCategory {
+  id: ID!
+  slug: String!
+  name: String!
+  description: String!
+  section: PublicSection
+}
+
+type PublicTag {
+  id: ID!
+  name: String!
+  brief: String!
+  isFeatured: Boolean!
+}

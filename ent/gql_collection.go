@@ -512,6 +512,11 @@ func (_q *PostQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				selectedFields = append(selectedFields, post.FieldContent)
 				fieldSeen[post.FieldContent] = struct{}{}
 			}
+		case "contentHtml":
+			if _, ok := fieldSeen[post.FieldContentHTML]; !ok {
+				selectedFields = append(selectedFields, post.FieldContentHTML)
+				fieldSeen[post.FieldContentHTML] = struct{}{}
+			}
 		case "otherByline":
 			if _, ok := fieldSeen[post.FieldOtherByline]; !ok {
 				selectedFields = append(selectedFields, post.FieldOtherByline)
@@ -521,6 +526,11 @@ func (_q *PostQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 			if _, ok := fieldSeen[post.FieldPublishTime]; !ok {
 				selectedFields = append(selectedFields, post.FieldPublishTime)
 				fieldSeen[post.FieldPublishTime] = struct{}{}
+			}
+		case "renderVersion":
+			if _, ok := fieldSeen[post.FieldRenderVersion]; !ok {
+				selectedFields = append(selectedFields, post.FieldRenderVersion)
+				fieldSeen[post.FieldRenderVersion] = struct{}{}
 			}
 		case "state":
 			if _, ok := fieldSeen[post.FieldState]; !ok {

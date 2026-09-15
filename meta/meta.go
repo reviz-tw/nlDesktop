@@ -15,6 +15,7 @@ type Field struct {
 	Name     string   `json:"name"`
 	Type     string   `json:"type"`
 	Required bool     `json:"required,omitempty"`
+	ReadOnly bool     `json:"readOnly,omitempty"`
 	Enum     []string `json:"enum,omitempty"`
 	Ref      string   `json:"ref,omitempty"`
 	Many     bool     `json:"many,omitempty"`
@@ -69,6 +70,7 @@ func build() {
 				Name:     fname,
 				Type:     string(f.Type),
 				Required: f.Required,
+				ReadOnly: f.ReadOnly,
 				Enum:     f.Enum,
 				Ref:      f.Ref,
 				Many:     f.Many,

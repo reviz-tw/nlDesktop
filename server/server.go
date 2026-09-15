@@ -34,6 +34,7 @@ func New(client *ent.Client, tokenSecret []byte) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", playground.Handler("nl CMS", "/graphql"))
 	mux.Handle("/graphql", gqlHandler)
+	mux.Handle("/graphql/content", contentHandler(client))
 	// OAuth 2.1 authorization server（MCP clients 的「連接→登入」流程）
 	(&oauth.Server{Client: client, Secret: tokenSecret}).Mount(mux)
 	// Admin UI：所有操作經 in-process GraphQL（帶登入者 token），權限與 API/MCP 一致
@@ -68,7 +69,7 @@ func authMiddleware(client *ent.Client, secret []byte, next http.Handler) http.H
 			var u *ent.User
 			if auth.IsAPIKey(token) {
 				k, err := client.ApiKey.Query().
-					Where(apikey.KeyHashEQ(auth.HashAPIKey(token))).
+					Where(apikey.KeyHashEQ(auth.HashAPIKey(token)), apikey.ScopeEQ(apikey.ScopeCMS)).
 					WithUser().
 					Only(sys)
 				if err == nil {

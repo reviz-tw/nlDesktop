@@ -66,6 +66,20 @@ func (_c *PostCreate) SetContent(v map[string]interface{}) *PostCreate {
 	return _c
 }
 
+// SetContentHTML sets the "content_html" field.
+func (_c *PostCreate) SetContentHTML(v string) *PostCreate {
+	_c.mutation.SetContentHTML(v)
+	return _c
+}
+
+// SetNillableContentHTML sets the "content_html" field if the given value is not nil.
+func (_c *PostCreate) SetNillableContentHTML(v *string) *PostCreate {
+	if v != nil {
+		_c.SetContentHTML(*v)
+	}
+	return _c
+}
+
 // SetOtherByline sets the "other_byline" field.
 func (_c *PostCreate) SetOtherByline(v string) *PostCreate {
 	_c.mutation.SetOtherByline(v)
@@ -90,6 +104,20 @@ func (_c *PostCreate) SetPublishTime(v time.Time) *PostCreate {
 func (_c *PostCreate) SetNillablePublishTime(v *time.Time) *PostCreate {
 	if v != nil {
 		_c.SetPublishTime(*v)
+	}
+	return _c
+}
+
+// SetRenderVersion sets the "render_version" field.
+func (_c *PostCreate) SetRenderVersion(v int) *PostCreate {
+	_c.mutation.SetRenderVersion(v)
+	return _c
+}
+
+// SetNillableRenderVersion sets the "render_version" field if the given value is not nil.
+func (_c *PostCreate) SetNillableRenderVersion(v *int) *PostCreate {
+	if v != nil {
+		_c.SetRenderVersion(*v)
 	}
 	return _c
 }
@@ -288,6 +316,10 @@ func (_c *PostCreate) defaults() {
 		v := post.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.RenderVersion(); !ok {
+		v := post.DefaultRenderVersion
+		_c.mutation.SetRenderVersion(v)
+	}
 	if _, ok := _c.mutation.State(); !ok {
 		v := post.DefaultState
 		_c.mutation.SetState(v)
@@ -360,6 +392,10 @@ func (_c *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 		_spec.SetField(post.FieldContent, field.TypeJSON, value)
 		_node.Content = value
 	}
+	if value, ok := _c.mutation.ContentHTML(); ok {
+		_spec.SetField(post.FieldContentHTML, field.TypeString, value)
+		_node.ContentHTML = value
+	}
 	if value, ok := _c.mutation.OtherByline(); ok {
 		_spec.SetField(post.FieldOtherByline, field.TypeString, value)
 		_node.OtherByline = value
@@ -367,6 +403,10 @@ func (_c *PostCreate) createSpec() (*Post, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PublishTime(); ok {
 		_spec.SetField(post.FieldPublishTime, field.TypeTime, value)
 		_node.PublishTime = &value
+	}
+	if value, ok := _c.mutation.RenderVersion(); ok {
+		_spec.SetField(post.FieldRenderVersion, field.TypeInt, value)
+		_node.RenderVersion = value
 	}
 	if value, ok := _c.mutation.State(); ok {
 		_spec.SetField(post.FieldState, field.TypeEnum, value)

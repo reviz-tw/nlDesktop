@@ -35,6 +35,20 @@ func (_u *ApiKeyUpdate) SetUpdatedAt(v time.Time) *ApiKeyUpdate {
 	return _u
 }
 
+// SetScope sets the "scope" field.
+func (_u *ApiKeyUpdate) SetScope(v apikey.Scope) *ApiKeyUpdate {
+	_u.mutation.SetScope(v)
+	return _u
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_u *ApiKeyUpdate) SetNillableScope(v *apikey.Scope) *ApiKeyUpdate {
+	if v != nil {
+		_u.SetScope(*v)
+	}
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *ApiKeyUpdate) SetName(v string) *ApiKeyUpdate {
 	_u.mutation.SetName(v)
@@ -123,6 +137,11 @@ func (_u *ApiKeyUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiKeyUpdate) check() error {
+	if v, ok := _u.mutation.Scope(); ok {
+		if err := apikey.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "ApiKey.scope": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := apikey.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ApiKey.name": %w`, err)}
@@ -153,6 +172,9 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(apikey.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.Scope(); ok {
+		_spec.SetField(apikey.FieldScope, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
@@ -212,6 +234,20 @@ type ApiKeyUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *ApiKeyUpdateOne) SetUpdatedAt(v time.Time) *ApiKeyUpdateOne {
 	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
+// SetScope sets the "scope" field.
+func (_u *ApiKeyUpdateOne) SetScope(v apikey.Scope) *ApiKeyUpdateOne {
+	_u.mutation.SetScope(v)
+	return _u
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_u *ApiKeyUpdateOne) SetNillableScope(v *apikey.Scope) *ApiKeyUpdateOne {
+	if v != nil {
+		_u.SetScope(*v)
+	}
 	return _u
 }
 
@@ -316,6 +352,11 @@ func (_u *ApiKeyUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ApiKeyUpdateOne) check() error {
+	if v, ok := _u.mutation.Scope(); ok {
+		if err := apikey.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "ApiKey.scope": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := apikey.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "ApiKey.name": %w`, err)}
@@ -363,6 +404,9 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(apikey.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.Scope(); ok {
+		_spec.SetField(apikey.FieldScope, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)

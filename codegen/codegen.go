@@ -113,6 +113,9 @@ func entField(name string, f nl.Field) string {
 		}
 	case nl.TypeInteger:
 		s = fmt.Sprintf("field.Int(%q)", col)
+		if f.Default != nil {
+			s += fmt.Sprintf(".Default(%v)", f.Default)
+		}
 		if !f.Required {
 			s += ".Optional()"
 		}
@@ -145,6 +148,9 @@ func entField(name string, f nl.Field) string {
 		return s
 	default:
 		panic(fmt.Sprintf("unsupported field type %q", f.Type))
+	}
+	if f.ReadOnly {
+		s += fmt.Sprintf(".Annotations(entgql.Skip(entgql.SkipMutationCreateInput | entgql.SkipMutationUpdateInput | entgql.SkipWhereInput), entgql.MapsTo(%q))", name)
 	}
 	if f.Unique {
 		s += ".Unique()"

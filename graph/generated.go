@@ -95,30 +95,38 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ContentApiKeyPayload struct {
+		ID   func(childComplexity int) int
+		Key  func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateAPIKey   func(childComplexity int, name string) int
-		CreateAuthor   func(childComplexity int, input ent.CreateAuthorInput) int
-		CreateCategory func(childComplexity int, input ent.CreateCategoryInput) int
-		CreatePhoto    func(childComplexity int, input ent.CreatePhotoInput) int
-		CreatePost     func(childComplexity int, input ent.CreatePostInput) int
-		CreateSection  func(childComplexity int, input ent.CreateSectionInput) int
-		CreateTag      func(childComplexity int, input ent.CreateTagInput) int
-		CreateUser     func(childComplexity int, input ent.CreateUserInput) int
-		DeleteAuthor   func(childComplexity int, id int) int
-		DeleteCategory func(childComplexity int, id int) int
-		DeletePhoto    func(childComplexity int, id int) int
-		DeletePost     func(childComplexity int, id int) int
-		DeleteSection  func(childComplexity int, id int) int
-		DeleteTag      func(childComplexity int, id int) int
-		DeleteUser     func(childComplexity int, id int) int
-		Login          func(childComplexity int, email string, password string) int
-		UpdateAuthor   func(childComplexity int, id int, input ent.UpdateAuthorInput) int
-		UpdateCategory func(childComplexity int, id int, input ent.UpdateCategoryInput) int
-		UpdatePhoto    func(childComplexity int, id int, input ent.UpdatePhotoInput) int
-		UpdatePost     func(childComplexity int, id int, input ent.UpdatePostInput) int
-		UpdateSection  func(childComplexity int, id int, input ent.UpdateSectionInput) int
-		UpdateTag      func(childComplexity int, id int, input ent.UpdateTagInput) int
-		UpdateUser     func(childComplexity int, id int, input ent.UpdateUserInput) int
+		CreateAPIKey        func(childComplexity int, name string) int
+		CreateAuthor        func(childComplexity int, input ent.CreateAuthorInput) int
+		CreateCategory      func(childComplexity int, input ent.CreateCategoryInput) int
+		CreateContentAPIKey func(childComplexity int, name string) int
+		CreatePhoto         func(childComplexity int, input ent.CreatePhotoInput) int
+		CreatePost          func(childComplexity int, input ent.CreatePostInput) int
+		CreateSection       func(childComplexity int, input ent.CreateSectionInput) int
+		CreateTag           func(childComplexity int, input ent.CreateTagInput) int
+		CreateUser          func(childComplexity int, input ent.CreateUserInput) int
+		DeleteAuthor        func(childComplexity int, id int) int
+		DeleteCategory      func(childComplexity int, id int) int
+		DeletePhoto         func(childComplexity int, id int) int
+		DeletePost          func(childComplexity int, id int) int
+		DeleteSection       func(childComplexity int, id int) int
+		DeleteTag           func(childComplexity int, id int) int
+		DeleteUser          func(childComplexity int, id int) int
+		Login               func(childComplexity int, email string, password string) int
+		RevokeContentAPIKey func(childComplexity int, id int) int
+		UpdateAuthor        func(childComplexity int, id int, input ent.UpdateAuthorInput) int
+		UpdateCategory      func(childComplexity int, id int, input ent.UpdateCategoryInput) int
+		UpdatePhoto         func(childComplexity int, id int, input ent.UpdatePhotoInput) int
+		UpdatePost          func(childComplexity int, id int, input ent.UpdatePostInput) int
+		UpdateSection       func(childComplexity int, id int, input ent.UpdateSectionInput) int
+		UpdateTag           func(childComplexity int, id int, input ent.UpdateTagInput) int
+		UpdateUser          func(childComplexity int, id int, input ent.UpdateUserInput) int
 	}
 
 	PageInfo struct {
@@ -149,23 +157,25 @@ type ComplexityRoot struct {
 	}
 
 	Post struct {
-		Brief        func(childComplexity int) int
-		Categories   func(childComplexity int) int
-		Content      func(childComplexity int) int
-		CreatedAt    func(childComplexity int) int
-		CreatedBy    func(childComplexity int) int
-		HeroImage    func(childComplexity int) int
-		ID           func(childComplexity int) int
-		OtherByline  func(childComplexity int) int
-		PublishTime  func(childComplexity int) int
-		RelatedPosts func(childComplexity int) int
-		Section      func(childComplexity int) int
-		State        func(childComplexity int) int
-		Subtitle     func(childComplexity int) int
-		Tags         func(childComplexity int) int
-		Title        func(childComplexity int) int
-		UpdatedAt    func(childComplexity int) int
-		Writers      func(childComplexity int) int
+		Brief         func(childComplexity int) int
+		Categories    func(childComplexity int) int
+		Content       func(childComplexity int) int
+		ContentHTML   func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		CreatedBy     func(childComplexity int) int
+		HeroImage     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		OtherByline   func(childComplexity int) int
+		PublishTime   func(childComplexity int) int
+		RelatedPosts  func(childComplexity int) int
+		RenderVersion func(childComplexity int) int
+		Section       func(childComplexity int) int
+		State         func(childComplexity int) int
+		Subtitle      func(childComplexity int) int
+		Tags          func(childComplexity int) int
+		Title         func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+		Writers       func(childComplexity int) int
 	}
 
 	PostConnection struct {
@@ -285,6 +295,8 @@ type MutationResolver interface {
 	DeleteUser(ctx context.Context, id int) (int, error)
 	Login(ctx context.Context, email string, password string) (*model.AuthPayload, error)
 	CreateAPIKey(ctx context.Context, name string) (*model.APIKeyPayload, error)
+	CreateContentAPIKey(ctx context.Context, name string) (*model.ContentAPIKeyPayload, error)
+	RevokeContentAPIKey(ctx context.Context, id int) (bool, error)
 }
 type QueryResolver interface {
 	Node(ctx context.Context, id int) (ent.Noder, error)
@@ -499,6 +511,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.CategoryEdge.Node(childComplexity), true
 
+	case "ContentApiKeyPayload.id":
+		if e.ComplexityRoot.ContentApiKeyPayload.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ContentApiKeyPayload.ID(childComplexity), true
+	case "ContentApiKeyPayload.key":
+		if e.ComplexityRoot.ContentApiKeyPayload.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ContentApiKeyPayload.Key(childComplexity), true
+	case "ContentApiKeyPayload.name":
+		if e.ComplexityRoot.ContentApiKeyPayload.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ContentApiKeyPayload.Name(childComplexity), true
+
 	case "Mutation.createApiKey":
 		if e.ComplexityRoot.Mutation.CreateAPIKey == nil {
 			break
@@ -532,6 +563,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateCategory(childComplexity, args["input"].(ent.CreateCategoryInput)), true
+	case "Mutation.createContentApiKey":
+		if e.ComplexityRoot.Mutation.CreateContentAPIKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createContentApiKey_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateContentAPIKey(childComplexity, args["name"].(string)), true
 	case "Mutation.createPhoto":
 		if e.ComplexityRoot.Mutation.CreatePhoto == nil {
 			break
@@ -675,6 +717,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Login(childComplexity, args["email"].(string), args["password"].(string)), true
+	case "Mutation.revokeContentApiKey":
+		if e.ComplexityRoot.Mutation.RevokeContentAPIKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeContentApiKey_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RevokeContentAPIKey(childComplexity, args["id"].(int)), true
 	case "Mutation.updateAuthor":
 		if e.ComplexityRoot.Mutation.UpdateAuthor == nil {
 			break
@@ -865,6 +918,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Post.Content(childComplexity), true
+	case "Post.contentHtml":
+		if e.ComplexityRoot.Post.ContentHTML == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Post.ContentHTML(childComplexity), true
 	case "Post.createdAt":
 		if e.ComplexityRoot.Post.CreatedAt == nil {
 			break
@@ -907,6 +966,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Post.RelatedPosts(childComplexity), true
+	case "Post.renderVersion":
+		if e.ComplexityRoot.Post.RenderVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Post.RenderVersion(childComplexity), true
 	case "Post.section":
 		if e.ComplexityRoot.Post.Section == nil {
 			break
@@ -2040,8 +2105,10 @@ type Post implements Node {
   updatedAt: Time!
   brief: JSON
   content: JSON
+  contentHtml: String
   otherByline: String
   publishTime: Time
+  renderVersion: Int
   state: PostState!
   subtitle: String
   title: String!
@@ -3201,6 +3268,18 @@ func (ec *executionContext) childFields_CategoryEdge(ctx context.Context, field 
 	return nil, fmt.Errorf("no field named %q was found under type CategoryEdge", field.Name)
 }
 
+func (ec *executionContext) childFields_ContentApiKeyPayload(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ContentApiKeyPayload_id(ctx, field)
+	case "name":
+		return ec.fieldContext_ContentApiKeyPayload_name(ctx, field)
+	case "key":
+		return ec.fieldContext_ContentApiKeyPayload_key(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ContentApiKeyPayload", field.Name)
+}
+
 func (ec *executionContext) childFields_PageInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "hasNextPage":
@@ -3267,10 +3346,14 @@ func (ec *executionContext) childFields_Post(ctx context.Context, field graphql.
 		return ec.fieldContext_Post_brief(ctx, field)
 	case "content":
 		return ec.fieldContext_Post_content(ctx, field)
+	case "contentHtml":
+		return ec.fieldContext_Post_contentHtml(ctx, field)
 	case "otherByline":
 		return ec.fieldContext_Post_otherByline(ctx, field)
 	case "publishTime":
 		return ec.fieldContext_Post_publishTime(ctx, field)
+	case "renderVersion":
+		return ec.fieldContext_Post_renderVersion(ctx, field)
 	case "state":
 		return ec.fieldContext_Post_state(ctx, field)
 	case "subtitle":
@@ -3603,6 +3686,20 @@ func (ec *executionContext) field_Mutation_createCategory_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createContentApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createPhoto_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3790,6 +3887,20 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["password"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeContentApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
+		func(ctx context.Context, v any) (int, error) {
+			return ec.unmarshalNID2int(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -5193,6 +5304,75 @@ func (ec *executionContext) fieldContext_CategoryEdge_cursor(_ context.Context, 
 	return graphql.NewScalarFieldContext("CategoryEdge", field, false, false, errors.New("field of type Cursor does not have child fields"))
 }
 
+func (ec *executionContext) _ContentApiKeyPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.ContentAPIKeyPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ContentApiKeyPayload_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ContentApiKeyPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ContentApiKeyPayload", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _ContentApiKeyPayload_name(ctx context.Context, field graphql.CollectedField, obj *model.ContentAPIKeyPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ContentApiKeyPayload_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ContentApiKeyPayload_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ContentApiKeyPayload", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ContentApiKeyPayload_key(ctx context.Context, field graphql.CollectedField, obj *model.ContentAPIKeyPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ContentApiKeyPayload_key(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ContentApiKeyPayload_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ContentApiKeyPayload", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Mutation_createAuthor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6205,6 +6385,94 @@ func (ec *executionContext) fieldContext_Mutation_createApiKey(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createContentApiKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_createContentApiKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateContentAPIKey(ctx, fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ContentAPIKeyPayload) graphql.Marshaler {
+			return ec.marshalNContentApiKeyPayload2ᚖgithubᚗcomᚋhcchienᚋnlᚋgraphᚋmodelᚐContentAPIKeyPayload(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_createContentApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ContentApiKeyPayload(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createContentApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokeContentApiKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_revokeContentApiKey(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RevokeContentAPIKey(ctx, fc.Args["id"].(int))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_revokeContentApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokeContentApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *entgql.PageInfo[int]) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6692,6 +6960,29 @@ func (ec *executionContext) fieldContext_Post_content(_ context.Context, field g
 	return graphql.NewScalarFieldContext("Post", field, false, false, errors.New("field of type JSON does not have child fields"))
 }
 
+func (ec *executionContext) _Post_contentHtml(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Post_contentHtml(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ContentHTML, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Post_contentHtml(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Post", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Post_otherByline(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6736,6 +7027,29 @@ func (ec *executionContext) _Post_publishTime(ctx context.Context, field graphql
 }
 func (ec *executionContext) fieldContext_Post_publishTime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Post", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _Post_renderVersion(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Post_renderVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RenderVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalOInt2int(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Post_renderVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Post", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _Post_state(ctx context.Context, field graphql.CollectedField, obj *ent.Post) (ret graphql.Marshaler) {
@@ -15325,6 +15639,54 @@ func (ec *executionContext) _CategoryEdge(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var contentApiKeyPayloadImplementors = []string{"ContentApiKeyPayload"}
+
+func (ec *executionContext) _ContentApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ContentAPIKeyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, contentApiKeyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ContentApiKeyPayload")
+		case "id":
+			out.Values[i] = ec._ContentApiKeyPayload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._ContentApiKeyPayload_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "key":
+			out.Values[i] = ec._ContentApiKeyPayload_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -15502,6 +15864,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createApiKey":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createApiKey(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createContentApiKey":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createContentApiKey(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokeContentApiKey":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokeContentApiKey(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -15771,6 +16147,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "contentHtml":
+			out.Values[i] = ec._Post_contentHtml(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "otherByline":
 			out.Values[i] = ec._Post_otherByline(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
@@ -15778,6 +16159,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "publishTime":
 			out.Values[i] = ec._Post_publishTime(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "renderVersion":
+			out.Values[i] = ec._Post_renderVersion(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -17562,6 +17948,20 @@ func (ec *executionContext) marshalNCategoryOrderField2ᚖgithubᚗcomᚋhcchien
 func (ec *executionContext) unmarshalNCategoryWhereInput2ᚖgithubᚗcomᚋhcchienᚋnlᚋentᚐCategoryWhereInput(ctx context.Context, v any) (*ent.CategoryWhereInput, error) {
 	res, err := ec.unmarshalInputCategoryWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNContentApiKeyPayload2githubᚗcomᚋhcchienᚋnlᚋgraphᚋmodelᚐContentAPIKeyPayload(ctx context.Context, sel ast.SelectionSet, v model.ContentAPIKeyPayload) graphql.Marshaler {
+	return ec._ContentApiKeyPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNContentApiKeyPayload2ᚖgithubᚗcomᚋhcchienᚋnlᚋgraphᚋmodelᚐContentAPIKeyPayload(ctx context.Context, sel ast.SelectionSet, v *model.ContentAPIKeyPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ContentApiKeyPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateAuthorInput2githubᚗcomᚋhcchienᚋnlᚋentᚐCreateAuthorInput(ctx context.Context, v any) (ent.CreateAuthorInput, error) {

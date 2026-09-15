@@ -65,6 +65,11 @@ func UpdatedAt(v time.Time) predicate.Post {
 	return predicate.Post(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
+// ContentHTML applies equality check predicate on the "content_html" field. It's identical to ContentHTMLEQ.
+func ContentHTML(v string) predicate.Post {
+	return predicate.Post(sql.FieldEQ(FieldContentHTML, v))
+}
+
 // OtherByline applies equality check predicate on the "other_byline" field. It's identical to OtherBylineEQ.
 func OtherByline(v string) predicate.Post {
 	return predicate.Post(sql.FieldEQ(FieldOtherByline, v))
@@ -73,6 +78,11 @@ func OtherByline(v string) predicate.Post {
 // PublishTime applies equality check predicate on the "publish_time" field. It's identical to PublishTimeEQ.
 func PublishTime(v time.Time) predicate.Post {
 	return predicate.Post(sql.FieldEQ(FieldPublishTime, v))
+}
+
+// RenderVersion applies equality check predicate on the "render_version" field. It's identical to RenderVersionEQ.
+func RenderVersion(v int) predicate.Post {
+	return predicate.Post(sql.FieldEQ(FieldRenderVersion, v))
 }
 
 // Subtitle applies equality check predicate on the "subtitle" field. It's identical to SubtitleEQ.
@@ -183,6 +193,81 @@ func ContentIsNil() predicate.Post {
 // ContentNotNil applies the NotNil predicate on the "content" field.
 func ContentNotNil() predicate.Post {
 	return predicate.Post(sql.FieldNotNull(FieldContent))
+}
+
+// ContentHTMLEQ applies the EQ predicate on the "content_html" field.
+func ContentHTMLEQ(v string) predicate.Post {
+	return predicate.Post(sql.FieldEQ(FieldContentHTML, v))
+}
+
+// ContentHTMLNEQ applies the NEQ predicate on the "content_html" field.
+func ContentHTMLNEQ(v string) predicate.Post {
+	return predicate.Post(sql.FieldNEQ(FieldContentHTML, v))
+}
+
+// ContentHTMLIn applies the In predicate on the "content_html" field.
+func ContentHTMLIn(vs ...string) predicate.Post {
+	return predicate.Post(sql.FieldIn(FieldContentHTML, vs...))
+}
+
+// ContentHTMLNotIn applies the NotIn predicate on the "content_html" field.
+func ContentHTMLNotIn(vs ...string) predicate.Post {
+	return predicate.Post(sql.FieldNotIn(FieldContentHTML, vs...))
+}
+
+// ContentHTMLGT applies the GT predicate on the "content_html" field.
+func ContentHTMLGT(v string) predicate.Post {
+	return predicate.Post(sql.FieldGT(FieldContentHTML, v))
+}
+
+// ContentHTMLGTE applies the GTE predicate on the "content_html" field.
+func ContentHTMLGTE(v string) predicate.Post {
+	return predicate.Post(sql.FieldGTE(FieldContentHTML, v))
+}
+
+// ContentHTMLLT applies the LT predicate on the "content_html" field.
+func ContentHTMLLT(v string) predicate.Post {
+	return predicate.Post(sql.FieldLT(FieldContentHTML, v))
+}
+
+// ContentHTMLLTE applies the LTE predicate on the "content_html" field.
+func ContentHTMLLTE(v string) predicate.Post {
+	return predicate.Post(sql.FieldLTE(FieldContentHTML, v))
+}
+
+// ContentHTMLContains applies the Contains predicate on the "content_html" field.
+func ContentHTMLContains(v string) predicate.Post {
+	return predicate.Post(sql.FieldContains(FieldContentHTML, v))
+}
+
+// ContentHTMLHasPrefix applies the HasPrefix predicate on the "content_html" field.
+func ContentHTMLHasPrefix(v string) predicate.Post {
+	return predicate.Post(sql.FieldHasPrefix(FieldContentHTML, v))
+}
+
+// ContentHTMLHasSuffix applies the HasSuffix predicate on the "content_html" field.
+func ContentHTMLHasSuffix(v string) predicate.Post {
+	return predicate.Post(sql.FieldHasSuffix(FieldContentHTML, v))
+}
+
+// ContentHTMLIsNil applies the IsNil predicate on the "content_html" field.
+func ContentHTMLIsNil() predicate.Post {
+	return predicate.Post(sql.FieldIsNull(FieldContentHTML))
+}
+
+// ContentHTMLNotNil applies the NotNil predicate on the "content_html" field.
+func ContentHTMLNotNil() predicate.Post {
+	return predicate.Post(sql.FieldNotNull(FieldContentHTML))
+}
+
+// ContentHTMLEqualFold applies the EqualFold predicate on the "content_html" field.
+func ContentHTMLEqualFold(v string) predicate.Post {
+	return predicate.Post(sql.FieldEqualFold(FieldContentHTML, v))
+}
+
+// ContentHTMLContainsFold applies the ContainsFold predicate on the "content_html" field.
+func ContentHTMLContainsFold(v string) predicate.Post {
+	return predicate.Post(sql.FieldContainsFold(FieldContentHTML, v))
 }
 
 // OtherBylineEQ applies the EQ predicate on the "other_byline" field.
@@ -308,6 +393,56 @@ func PublishTimeIsNil() predicate.Post {
 // PublishTimeNotNil applies the NotNil predicate on the "publish_time" field.
 func PublishTimeNotNil() predicate.Post {
 	return predicate.Post(sql.FieldNotNull(FieldPublishTime))
+}
+
+// RenderVersionEQ applies the EQ predicate on the "render_version" field.
+func RenderVersionEQ(v int) predicate.Post {
+	return predicate.Post(sql.FieldEQ(FieldRenderVersion, v))
+}
+
+// RenderVersionNEQ applies the NEQ predicate on the "render_version" field.
+func RenderVersionNEQ(v int) predicate.Post {
+	return predicate.Post(sql.FieldNEQ(FieldRenderVersion, v))
+}
+
+// RenderVersionIn applies the In predicate on the "render_version" field.
+func RenderVersionIn(vs ...int) predicate.Post {
+	return predicate.Post(sql.FieldIn(FieldRenderVersion, vs...))
+}
+
+// RenderVersionNotIn applies the NotIn predicate on the "render_version" field.
+func RenderVersionNotIn(vs ...int) predicate.Post {
+	return predicate.Post(sql.FieldNotIn(FieldRenderVersion, vs...))
+}
+
+// RenderVersionGT applies the GT predicate on the "render_version" field.
+func RenderVersionGT(v int) predicate.Post {
+	return predicate.Post(sql.FieldGT(FieldRenderVersion, v))
+}
+
+// RenderVersionGTE applies the GTE predicate on the "render_version" field.
+func RenderVersionGTE(v int) predicate.Post {
+	return predicate.Post(sql.FieldGTE(FieldRenderVersion, v))
+}
+
+// RenderVersionLT applies the LT predicate on the "render_version" field.
+func RenderVersionLT(v int) predicate.Post {
+	return predicate.Post(sql.FieldLT(FieldRenderVersion, v))
+}
+
+// RenderVersionLTE applies the LTE predicate on the "render_version" field.
+func RenderVersionLTE(v int) predicate.Post {
+	return predicate.Post(sql.FieldLTE(FieldRenderVersion, v))
+}
+
+// RenderVersionIsNil applies the IsNil predicate on the "render_version" field.
+func RenderVersionIsNil() predicate.Post {
+	return predicate.Post(sql.FieldIsNull(FieldRenderVersion))
+}
+
+// RenderVersionNotNil applies the NotNil predicate on the "render_version" field.
+func RenderVersionNotNil() predicate.Post {
+	return predicate.Post(sql.FieldNotNull(FieldRenderVersion))
 }
 
 // StateEQ applies the EQ predicate on the "state" field.

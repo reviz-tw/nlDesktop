@@ -10,9 +10,12 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +46,7 @@ func New(gql http.Handler, secret []byte) http.Handler {
 	mux.HandleFunc("POST /admin/login", h.loginSubmit)
 	mux.HandleFunc("GET /admin/logout", h.logout)
 	mux.HandleFunc("GET /admin", h.requireAuth(h.home))
+	mux.HandleFunc("POST /admin/l/{list}/bulk", h.requireAuth(h.bulkSubmit))
 	mux.HandleFunc("GET /admin/l/{list}", h.requireAuth(h.listView))
 	mux.HandleFunc("GET /admin/l/{list}/new", h.requireAuth(h.itemForm))
 	mux.HandleFunc("POST /admin/l/{list}/new", h.requireAuth(h.itemSubmit))
@@ -93,9 +97,10 @@ func (h *Handler) optionsAPI(w http.ResponseWriter, r *http.Request, s *session)
 // ---- auth ----
 
 type session struct {
-	token string
-	name  string
-	role  string
+	token  string
+	name   string
+	role   string
+	counts map[string]string
 }
 
 func (h *Handler) sessionFrom(r *http.Request) *session {
@@ -200,57 +205,276 @@ func navLists(role string) []meta.List {
 	return out
 }
 
+// Navigation counts follow the same viewer and row-level restrictions as lists.
+func (h *Handler) renderPage(w http.ResponseWriter, title string, s *session, nav []meta.List, body template.HTML) {
+	s.counts = map[string]string{}
+	for _, l := range nav {
+		data, errs := h.exec(s.token, fmt.Sprintf(`{items:%s(first:0){totalCount}}`, l.QueryField), nil)
+		var count struct{ TotalCount int }
+		if len(errs) == 0 && json.Unmarshal(data["items"], &count) == nil {
+			s.counts[l.Name] = strconv.Itoa(count.TotalCount)
+		}
+	}
+	renderPage(w, title, s, nav, body)
+}
 func (h *Handler) home(w http.ResponseWriter, r *http.Request, s *session) {
-	renderPage(w, "nl CMS", s, navLists(s.role), homeBody(navLists(s.role)))
+	r.SetPathValue("list", "Post")
+	h.listView(w, r, s)
 }
 
+type filterOption struct{ Value, Label string }
+
+func listFilters(l *meta.List) []filterOption {
+	var opts []filterOption
+	switch l.Name {
+	case "Post", "User":
+		field := "state"
+		if l.Name == "User" {
+			field = "role"
+		}
+		opts = append(opts, filterOption{"all", "全部"})
+		for _, f := range l.Fields {
+			if f.Name == field {
+				for _, v := range f.Enum {
+					opts = append(opts, filterOption{v, strings.ToUpper(v[:1]) + v[1:]})
+				}
+			}
+		}
+	case "Tag":
+		opts = []filterOption{{"all", "全部"}, {"featured", "精選"}, {"normal", "一般"}}
+	}
+	return opts
+}
+
+// Query only readable fields; field restrictions still apply in GraphQL itself.
+func selectionFor(l *meta.List, role string) string {
+	copyList := *l
+	copyList.Fields = nil
+	for _, f := range l.Fields {
+		if access.FieldReadAllowed(l.Name, f.Name, role) {
+			copyList.Fields = append(copyList.Fields, f)
+		}
+	}
+	return copyList.Selection()
+}
 func (h *Handler) listView(w http.ResponseWriter, r *http.Request, s *session) {
 	l, ok := meta.Get(r.PathValue("list"))
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
-	after := r.URL.Query().Get("after")
-	args := "first: 20, orderBy: {field: UPDATED_AT, direction: DESC}"
-	vars := map[string]any{}
-	if after != "" {
-		args += ", after: $after"
-		vars["after"] = after
+	params := r.URL.Query()
+	query := strings.TrimSpace(params.Get("q"))
+	filter := params.Get("filter")
+	if filter == "" {
+		filter = "all"
 	}
-	varDef := ""
-	if after != "" {
-		varDef = "($after: Cursor)"
+	opts := listFilters(l)
+	valid := filter == "all"
+	for _, o := range opts {
+		if o.Value == filter {
+			valid = true
+		}
 	}
-	q := fmt.Sprintf(`query%s{ items: %s(%s){ totalCount pageInfo{hasNextPage endCursor} edges{node{%s}} } }`,
-		varDef, l.QueryField, args, l.Selection())
+	if !valid {
+		filter = "all"
+	}
+	where := map[string]any{}
+	if query != "" {
+		where[l.LabelField+"ContainsFold"] = query
+	}
+	if filter != "all" {
+		switch l.Name {
+		case "Post":
+			where["state"] = filter
+		case "User":
+			where["role"] = filter
+		case "Tag":
+			where["isFeatured"] = filter == "featured"
+		}
+	}
+	direction := params.Get("direction")
+	if direction != "ASC" {
+		direction = "DESC"
+	}
+	args := "first:20"
+	cursor := params.Get("after")
+	if before := params.Get("before"); before != "" {
+		args = "last:20, before:$cursor"
+		cursor = before
+	} else if cursor != "" {
+		args += ", after:$cursor"
+	}
+	defs := fmt.Sprintf("$where:%sWhereInput", l.Name)
+	vars := map[string]any{"where": where}
+	if cursor != "" {
+		defs += ", $cursor:Cursor"
+		vars["cursor"] = cursor
+	}
+	q := fmt.Sprintf(`query(%s){items:%s(%s,where:$where,orderBy:{field:UPDATED_AT,direction:%s}){totalCount pageInfo{hasNextPage hasPreviousPage startCursor endCursor} edges{node{%s}}} total:%s(first:0){totalCount}}`, defs, l.QueryField, args, direction, selectionFor(l, s.role), l.QueryField)
 	data, errs := h.exec(s.token, q, vars)
 	if len(errs) > 0 {
-		renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
+		h.renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
 		return
 	}
 	var conn struct {
-		TotalCount int `json:"totalCount"`
+		TotalCount int
 		PageInfo   struct {
-			HasNextPage bool   `json:"hasNextPage"`
-			EndCursor   string `json:"endCursor"`
-		} `json:"pageInfo"`
-		Edges []struct {
-			Node map[string]any `json:"node"`
-		} `json:"edges"`
+			HasNextPage, HasPreviousPage bool
+			StartCursor, EndCursor       string
+		}
+		Edges []struct{ Node map[string]any }
 	}
 	if err := json.Unmarshal(data["items"], &conn); err != nil {
-		renderPage(w, l.Name, s, navLists(s.role), errorBody([]string{err.Error()}))
+		h.renderPage(w, l.Name, s, navLists(s.role), errorBody([]string{err.Error()}))
 		return
 	}
-	rows := make([]map[string]any, len(conn.Edges))
-	for i, e := range conn.Edges {
-		rows[i] = e.Node
+	var total struct{ TotalCount int }
+	json.Unmarshal(data["total"], &total)
+	rows := make([]map[string]any, 0, len(conn.Edges))
+	for _, e := range conn.Edges {
+		rows = append(rows, e.Node)
 	}
-	next := ""
+	// Display related counts using the target list's own permission-filtered query.
+	target, relation, column := "", "", ""
+	if l.Name == "Author" {
+		target, relation, column = "Post", "hasWritersWith", "posts"
+	}
+	if l.Name == "Section" {
+		target, relation, column = "Category", "hasSectionWith", "categories"
+	}
+	if target != "" && access.CanOperate(target, access.OpQuery, s.role) && len(rows) > 0 {
+		targetList, _ := meta.Get(target)
+		var countQuery strings.Builder
+		countQuery.WriteString("{")
+		for i, row := range rows {
+			id, err := strconv.Atoi(fmt.Sprint(row["id"]))
+			if err == nil {
+				fmt.Fprintf(&countQuery, "r%d:%s(first:0,where:{%s:[{id:%d}]}){totalCount} ", i, targetList.QueryField, relation, id)
+			}
+		}
+		countQuery.WriteString("}")
+		counts, errs := h.exec(s.token, countQuery.String(), nil)
+		if len(errs) == 0 {
+			for i, row := range rows {
+				var result struct{ TotalCount int }
+				if json.Unmarshal(counts[fmt.Sprintf("r%d", i)], &result) == nil {
+					row[column] = result.TotalCount
+				}
+			}
+		}
+	}
+	pageURL := func(key, value string) string {
+		v := url.Values{"q": {query}, "filter": {filter}, "direction": {direction}, key: {value}}
+		return "/admin/l/" + l.Name + "?" + v.Encode()
+	}
+	prev, next := "", ""
+	if conn.PageInfo.HasPreviousPage {
+		prev = pageURL("before", conn.PageInfo.StartCursor)
+	}
 	if conn.PageInfo.HasNextPage {
-		next = conn.PageInfo.EndCursor
+		next = pageURL("after", conn.PageInfo.EndCursor)
 	}
-	renderPage(w, l.Name, s, navLists(s.role), listBody(l, rows, conn.TotalCount, next))
+	canDelete := access.CanOperate(l.Name, access.OpDelete, s.role)
+	canUpdate := access.CanOperate(l.Name, access.OpUpdate, s.role)
+	canState := l.Name == "Post" && canUpdate && access.FieldWriteAllowed(l.Name, "state", access.OpUpdate, s.role)
+	canFeatured := l.Name == "Tag" && canUpdate
+	nextDirection := "ASC"
+	if direction == "ASC" {
+		nextDirection = "DESC"
+	}
+	h.renderPage(w, l.Name, s, navLists(s.role), listBody(map[string]any{"List": l, "Rows": rows, "Total": total.TotalCount, "Matched": conn.TotalCount, "Extra": extraColumns(l), "Next": next, "Prev": prev, "Query": query, "Filter": filter, "Filtered": query != "" || filter != "all", "Filters": opts, "Direction": direction, "NextDirection": nextDirection, "Params": params, "CanCreate": access.CanOperate(l.Name, access.OpCreate, s.role), "CanDelete": canDelete, "CanState": canState, "CanFeatured": canFeatured, "CanBulk": canDelete || canState || canFeatured, "Notice": params.Get("notice")}))
+}
+
+func (h *Handler) bulkSubmit(w http.ResponseWriter, r *http.Request, s *session) {
+	l, ok := meta.Get(r.PathValue("list"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	action := r.PostFormValue("action")
+	op := access.OpUpdate
+	if action == "delete" {
+		op = access.OpDelete
+	}
+	allowed := access.CanOperate(l.Name, op, s.role)
+	switch action {
+	case "delete":
+	case "published", "draft":
+		allowed = allowed && l.Name == "Post" && access.FieldWriteAllowed(l.Name, "state", op, s.role)
+	case "featured", "normal":
+		allowed = allowed && l.Name == "Tag"
+	default:
+		allowed = false
+	}
+	if !allowed {
+		http.Error(w, "access denied", http.StatusForbidden)
+		return
+	}
+	ids := r.PostForm["ids"]
+	if len(ids) == 0 || len(ids) > 20 {
+		http.Error(w, "請選取 1–20 筆資料", http.StatusBadRequest)
+		return
+	}
+	seen := map[int]bool{}
+	parsed := []int{}
+	for _, raw := range ids {
+		id, err := strconv.Atoi(raw)
+		if err != nil || id <= 0 {
+			http.Error(w, "invalid id", http.StatusBadRequest)
+			return
+		}
+		if !seen[id] {
+			seen[id] = true
+			parsed = append(parsed, id)
+		}
+	}
+	succeeded := 0
+	var failures []string
+	for _, id := range parsed {
+		var errs []string
+		if action == "delete" {
+			_, errs = h.exec(s.token, fmt.Sprintf(`mutation($id:ID!){delete%s(id:$id)}`, l.Name), map[string]any{"id": id})
+		} else {
+			input := map[string]any{}
+			switch action {
+			case "published", "draft":
+				input["state"] = action
+				if action == "published" {
+					data, readErrs := h.exec(s.token, `query($id:ID){posts(first:1,where:{id:$id}){edges{node{publishTime}}}}`, map[string]any{"id": id})
+					var posts struct {
+						Edges []struct{ Node struct{ PublishTime *string } }
+					}
+					if len(readErrs) > 0 || json.Unmarshal(data["posts"], &posts) != nil || len(posts.Edges) == 0 {
+						failures = append(failures, fmt.Sprintf("#%d 無法讀取", id))
+						continue
+					}
+					if posts.Edges[0].Node.PublishTime == nil {
+						input["publishTime"] = time.Now().Format(time.RFC3339)
+					}
+				}
+			case "featured", "normal":
+				input["isFeatured"] = action == "featured"
+			}
+			_, errs = h.exec(s.token, fmt.Sprintf(`mutation($id:ID!,$input:Update%sInput!){update%s(id:$id,input:$input){id}}`, l.Name, l.Name), map[string]any{"id": id, "input": input})
+		}
+		if len(errs) > 0 {
+			failures = append(failures, fmt.Sprintf("#%d：%s", id, strings.Join(errs, "；")))
+		} else {
+			succeeded++
+		}
+	}
+	notice := fmt.Sprintf("已完成 %d 筆操作", succeeded)
+	if len(failures) > 0 {
+		notice += "；" + strings.Join(failures, "；")
+	}
+	v := url.Values{"notice": {notice}, "q": {r.PostFormValue("q")}, "filter": {r.PostFormValue("filter")}}
+	http.Redirect(w, r, "/admin/l/"+l.Name+"?"+v.Encode(), http.StatusSeeOther)
 }
 
 func (h *Handler) itemForm(w http.ResponseWriter, r *http.Request, s *session) {
@@ -264,11 +488,11 @@ func (h *Handler) itemForm(w http.ResponseWriter, r *http.Request, s *session) {
 	if id != "" {
 		// 以 where:{id} 查單筆（node(id) 需要 global-unique-ID，本框架採 per-table id）
 		q := fmt.Sprintf(`query($id: ID){ items: %s(where:{id: $id}, first: 1){ edges{node{%s}} } }`,
-			l.QueryField, l.Selection())
+			l.QueryField, selectionFor(l, s.role))
 		idNum, _ := strconv.Atoi(id)
 		data, errs := h.exec(s.token, q, map[string]any{"id": idNum})
 		if len(errs) > 0 {
-			renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
+			h.renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
 			return
 		}
 		var conn struct {
@@ -277,13 +501,13 @@ func (h *Handler) itemForm(w http.ResponseWriter, r *http.Request, s *session) {
 			} `json:"edges"`
 		}
 		if err := json.Unmarshal(data["items"], &conn); err != nil || len(conn.Edges) == 0 {
-			renderPage(w, l.Name, s, navLists(s.role), errorBody([]string{"找不到項目（或無權限）"}))
+			h.renderPage(w, l.Name, s, navLists(s.role), errorBody([]string{"找不到項目（或無權限）"}))
 			return
 		}
 		item = conn.Edges[0].Node
 	}
 	fields := h.buildFormFields(s, l, item)
-	renderPage(w, l.Name, s, navLists(s.role), formBody(l, id, fields, ""))
+	h.renderPage(w, l.Name, s, navLists(s.role), formBody(l, id, fields, "", s))
 }
 
 func (h *Handler) itemSubmit(w http.ResponseWriter, r *http.Request, s *session) {
@@ -327,9 +551,17 @@ func (h *Handler) itemSubmit(w http.ResponseWriter, r *http.Request, s *session)
 	var item map[string]any
 	if id != "" {
 		item = map[string]any{}
+		data, errs := h.exec(s.token, fmt.Sprintf(`query($id:ID){items:%s(first:1,where:{id:$id}){edges{node{%s}}}}`, l.QueryField, selectionFor(l, s.role)), map[string]any{"id": id})
+		var current struct {
+			Edges []struct{ Node map[string]any }
+		}
+		if len(errs) == 0 && json.Unmarshal(data["items"], &current) == nil && len(current.Edges) > 0 {
+			item = current.Edges[0].Node
+		}
 	}
 	fields := h.buildFormFields(s, l, item)
-	renderPage(w, l.Name, s, navLists(s.role), formBody(l, id, fields, err.Error()))
+	h.restoreSubmittedFields(s, fields, r)
+	h.renderPage(w, l.Name, s, navLists(s.role), formBody(l, id, fields, err.Error(), s))
 }
 
 func (h *Handler) itemDelete(w http.ResponseWriter, r *http.Request, s *session) {
@@ -341,7 +573,7 @@ func (h *Handler) itemDelete(w http.ResponseWriter, r *http.Request, s *session)
 	idNum, _ := strconv.Atoi(r.PathValue("id"))
 	q := fmt.Sprintf(`mutation($id: ID!){ delete%s(id: $id) }`, l.Name)
 	if _, errs := h.exec(s.token, q, map[string]any{"id": idNum}); len(errs) > 0 {
-		renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
+		h.renderPage(w, l.Name, s, navLists(s.role), errorBody(errs))
 		return
 	}
 	http.Redirect(w, r, "/admin/l/"+l.Name, http.StatusFound)
@@ -366,17 +598,27 @@ type formField struct {
 	Ref          string   // relationship
 	Many         bool
 	SelectedJSON string // relationship 現值 [{id,label}]，picker 初始 chips
-	Denied       bool   // 無權查詢關聯目標 list（欄位唯讀）
+	Readonly     bool
+	Denied       bool // 無權查詢關聯目標 list（欄位唯讀）
 }
 
 // buildFormFields 依 meta 欄位型別產生表單欄位（含關聯選項與現值）。
 func (h *Handler) buildFormFields(s *session, l *meta.List, item map[string]any) []formField {
 	var out []formField
 	for _, f := range l.Fields {
-		if f.Name == "createdBy" || f.Name == "createdAt" || f.Name == "updatedAt" {
+		if f.ReadOnly || f.Name == "createdBy" || f.Name == "createdAt" || f.Name == "updatedAt" {
 			continue
 		}
 		ff := formField{Name: f.Name, Type: f.Type, Required: f.Required, Note: f.Note, Enum: f.Enum, Ref: f.Ref, Many: f.Many}
+		op := access.OpCreate
+		if item != nil {
+			op = access.OpUpdate
+		}
+		ff.Readonly = !access.CanOperate(l.Name, op, s.role) || !access.FieldWriteAllowed(l.Name, f.Name, op, s.role)
+		// Editorial hints omit storage/API implementation details from the UI.
+		if f.Type == "richText" {
+			ff.Note = ""
+		}
 		v := item[f.Name]
 		switch f.Type {
 		case "boolean":
@@ -397,6 +639,12 @@ func (h *Handler) buildFormFields(s *session, l *meta.List, item map[string]any)
 			}
 		case "select":
 			ff.Value, _ = v.(string)
+			if item == nil && f.Name == "state" {
+				ff.Value = "draft"
+			}
+			if item == nil && f.Name == "role" {
+				ff.Value = "contributor"
+			}
 		default:
 			switch tv := v.(type) {
 			case string:
@@ -407,7 +655,53 @@ func (h *Handler) buildFormFields(s *session, l *meta.List, item map[string]any)
 		}
 		out = append(out, ff)
 	}
+	if l.Name == "User" && access.CanOperate(l.Name, access.OpUpdate, s.role) {
+		out = append(out, formField{Name: "password", Type: "password", Required: item == nil})
+	}
+	order := []string{"state", "role", "section", "title", "name", "email", "subtitle", "slug", "url", "publishTime", "otherByline", "bio", "description", "brief", "content", "categories", "tags", "writers", "heroImage", "image", "relatedPosts", "sortOrder", "isFeatured", "password"}
+	ranks := map[string]int{}
+	for i, k := range order {
+		ranks[k] = i + 1
+	}
+	sort.SliceStable(out, func(i, j int) bool { return ranks[out[i].Name] < ranks[out[j].Name] })
 	return out
+}
+
+// Keep submitted content on validation failure, including rich text and relationships.
+func (h *Handler) restoreSubmittedFields(s *session, fields []formField, r *http.Request) {
+	for i := range fields {
+		f := &fields[i]
+		if f.Readonly || f.Denied {
+			continue
+		}
+		f.Value = r.PostFormValue(f.Name)
+		f.Checked = f.Value == "on"
+		if f.Type == "password" {
+			f.Value = ""
+			continue
+		}
+		if f.Type == "richText" {
+			f.JSON = r.PostFormValue(f.Name)
+		}
+		if f.Type == "relationship" && !f.Denied {
+			opts := []option{}
+			target, ok := meta.Get(f.Ref)
+			if !ok {
+				continue
+			}
+			for _, id := range r.PostForm[f.Name] {
+				data, errs := h.exec(s.token, fmt.Sprintf(`query($id:ID){items:%s(first:1,where:{id:$id}){edges{node{id %s}}}}`, target.QueryField, target.LabelField), map[string]any{"id": id})
+				var c struct {
+					Edges []struct{ Node map[string]any }
+				}
+				if len(errs) == 0 && json.Unmarshal(data["items"], &c) == nil && len(c.Edges) > 0 {
+					opts = append(opts, option{ID: id, Label: cell(c.Edges[0].Node, target.LabelField)})
+				}
+			}
+			b, _ := json.Marshal(opts)
+			f.SelectedJSON = string(b)
+		}
+	}
 }
 
 // selectedJSON 將關聯現值序列化為 [{id,label}]（picker 初始 chips）。
@@ -444,8 +738,17 @@ func selectedJSON(f meta.Field, current any) string {
 // formToInput 將表單值轉為 Create/Update input 物件。
 func (h *Handler) formToInput(l *meta.List, r *http.Request, isUpdate bool) (map[string]any, error) {
 	input := map[string]any{}
+	if l.Name == "User" {
+		if password := r.PostFormValue("password"); password != "" {
+			input["password"] = password
+		}
+	}
 	for _, f := range l.Fields {
-		if f.Name == "createdBy" || f.Name == "createdAt" || f.Name == "updatedAt" {
+		if f.ReadOnly || f.Name == "createdBy" || f.Name == "createdAt" || f.Name == "updatedAt" {
+			continue
+		}
+		// Omitted controls differ from intentionally cleared values.
+		if _, present := r.PostForm[f.Name]; !present && isUpdate && f.Type != "boolean" && f.Type != "relationship" {
 			continue
 		}
 		raw := strings.TrimSpace(r.PostFormValue(f.Name))
@@ -463,6 +766,9 @@ func (h *Handler) formToInput(l *meta.List, r *http.Request, isUpdate bool) (map
 			input[f.Name] = n
 		case "timestamp":
 			if raw == "" {
+				if isUpdate && !f.Required {
+					input["clear"+upperFirst(f.Name)] = true
+				}
 				continue
 			}
 			t, err := time.ParseInLocation("2006-01-02T15:04", raw, time.Local)
@@ -476,6 +782,9 @@ func (h *Handler) formToInput(l *meta.List, r *http.Request, isUpdate bool) (map
 			}
 		case "richText":
 			if raw == "" {
+				if isUpdate {
+					input["clear"+upperFirst(f.Name)] = true
+				}
 				continue
 			}
 			var doc map[string]any
@@ -524,6 +833,7 @@ func (h *Handler) formToInput(l *meta.List, r *http.Request, isUpdate bool) (map
 			}
 		default: // text
 			if raw == "" && isUpdate && !f.Required {
+				input["clear"+upperFirst(f.Name)] = true
 				continue
 			}
 			if raw != "" || !isUpdate {
@@ -546,6 +856,9 @@ func singularName(s string) string {
 }
 
 func upperFirst(s string) string {
+	if s == "url" {
+		return "URL"
+	}
 	if s == "" {
 		return s
 	}

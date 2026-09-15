@@ -3,6 +3,9 @@
 package apikey
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -18,6 +21,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldScope holds the string denoting the scope field in the database.
+	FieldScope = "scope"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldKeyHash holds the string denoting the key_hash field in the database.
@@ -40,6 +45,7 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldScope,
 	FieldName,
 	FieldKeyHash,
 }
@@ -78,6 +84,32 @@ var (
 	KeyHashValidator func(string) error
 )
 
+// Scope defines the type for the "scope" enum field.
+type Scope string
+
+// ScopeCMS is the default value of the Scope enum.
+const DefaultScope = ScopeCMS
+
+// Scope values.
+const (
+	ScopeCMS         Scope = "cms"
+	ScopeContentRead Scope = "content:read"
+)
+
+func (s Scope) String() string {
+	return string(s)
+}
+
+// ScopeValidator is a validator for the "scope" field enum values. It is called by the builders before save.
+func ScopeValidator(s Scope) error {
+	switch s {
+	case ScopeCMS, ScopeContentRead:
+		return nil
+	default:
+		return fmt.Errorf("apikey: invalid enum value for scope field: %q", s)
+	}
+}
+
 // OrderOption defines the ordering options for the ApiKey queries.
 type OrderOption func(*sql.Selector)
 
@@ -94,6 +126,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByScope orders the results by the scope field.
+func ByScope(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScope, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -118,4 +155,22 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
 	)
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (e Scope) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(e.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (e *Scope) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*e = Scope(str)
+	if err := ScopeValidator(*e); err != nil {
+		return fmt.Errorf("%s is not a valid Scope", str)
+	}
+	return nil
 }

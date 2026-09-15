@@ -39,11 +39,11 @@ func init() {
 	// apikey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	apikey.UpdateDefaultUpdatedAt = apikeyDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// apikeyDescName is the schema descriptor for name field.
-	apikeyDescName := apikeyFields[0].Descriptor()
+	apikeyDescName := apikeyFields[1].Descriptor()
 	// apikey.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	apikey.NameValidator = apikeyDescName.Validators[0].(func(string) error)
 	// apikeyDescKeyHash is the schema descriptor for key_hash field.
-	apikeyDescKeyHash := apikeyFields[1].Descriptor()
+	apikeyDescKeyHash := apikeyFields[2].Descriptor()
 	// apikey.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
 	apikey.KeyHashValidator = apikeyDescKeyHash.Validators[0].(func(string) error)
 	authorMixin := schema.Author{}.Mixin()
@@ -217,8 +217,12 @@ func init() {
 	post.DefaultUpdatedAt = postDescUpdatedAt.Default.(func() time.Time)
 	// post.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	post.UpdateDefaultUpdatedAt = postDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// postDescRenderVersion is the schema descriptor for render_version field.
+	postDescRenderVersion := postFields[5].Descriptor()
+	// post.DefaultRenderVersion holds the default value on creation for the render_version field.
+	post.DefaultRenderVersion = postDescRenderVersion.Default.(int)
 	// postDescTitle is the schema descriptor for title field.
-	postDescTitle := postFields[6].Descriptor()
+	postDescTitle := postFields[8].Descriptor()
 	// post.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	post.TitleValidator = postDescTitle.Validators[0].(func(string) error)
 	sectionMixin := schema.Section{}.Mixin()

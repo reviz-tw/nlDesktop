@@ -55,6 +55,7 @@ type ApiKeyMutation struct {
 	id            *int
 	created_at    *time.Time
 	updated_at    *time.Time
+	scope         *apikey.Scope
 	name          *string
 	key_hash      *string
 	clearedFields map[string]struct{}
@@ -235,6 +236,42 @@ func (m *ApiKeyMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// SetScope sets the "scope" field.
+func (m *ApiKeyMutation) SetScope(a apikey.Scope) {
+	m.scope = &a
+}
+
+// Scope returns the value of the "scope" field in the mutation.
+func (m *ApiKeyMutation) Scope() (r apikey.Scope, exists bool) {
+	v := m.scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScope returns the old "scope" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldScope(ctx context.Context) (v apikey.Scope, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScope is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScope requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScope: %w", err)
+	}
+	return oldValue.Scope, nil
+}
+
+// ResetScope resets all changes to the "scope" field.
+func (m *ApiKeyMutation) ResetScope() {
+	m.scope = nil
+}
+
 // SetName sets the "name" field.
 func (m *ApiKeyMutation) SetName(s string) {
 	m.name = &s
@@ -380,12 +417,15 @@ func (m *ApiKeyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ApiKeyMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, apikey.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, apikey.FieldUpdatedAt)
+	}
+	if m.scope != nil {
+		fields = append(fields, apikey.FieldScope)
 	}
 	if m.name != nil {
 		fields = append(fields, apikey.FieldName)
@@ -405,6 +445,8 @@ func (m *ApiKeyMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case apikey.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case apikey.FieldScope:
+		return m.Scope()
 	case apikey.FieldName:
 		return m.Name()
 	case apikey.FieldKeyHash:
@@ -422,6 +464,8 @@ func (m *ApiKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldCreatedAt(ctx)
 	case apikey.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case apikey.FieldScope:
+		return m.OldScope(ctx)
 	case apikey.FieldName:
 		return m.OldName(ctx)
 	case apikey.FieldKeyHash:
@@ -448,6 +492,13 @@ func (m *ApiKeyMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case apikey.FieldScope:
+		v, ok := value.(apikey.Scope)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScope(v)
 		return nil
 	case apikey.FieldName:
 		v, ok := value.(string)
@@ -517,6 +568,9 @@ func (m *ApiKeyMutation) ResetField(name string) error {
 		return nil
 	case apikey.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case apikey.FieldScope:
+		m.ResetScope()
 		return nil
 	case apikey.FieldName:
 		m.ResetName()
@@ -4457,8 +4511,11 @@ type PostMutation struct {
 	updated_at           *time.Time
 	brief                *map[string]interface{}
 	content              *map[string]interface{}
+	content_html         *string
 	other_byline         *string
 	publish_time         *time.Time
+	render_version       *int
+	addrender_version    *int
 	state                *post.State
 	subtitle             *string
 	title                *string
@@ -4754,6 +4811,55 @@ func (m *PostMutation) ResetContent() {
 	delete(m.clearedFields, post.FieldContent)
 }
 
+// SetContentHTML sets the "content_html" field.
+func (m *PostMutation) SetContentHTML(s string) {
+	m.content_html = &s
+}
+
+// ContentHTML returns the value of the "content_html" field in the mutation.
+func (m *PostMutation) ContentHTML() (r string, exists bool) {
+	v := m.content_html
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHTML returns the old "content_html" field's value of the Post entity.
+// If the Post object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PostMutation) OldContentHTML(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHTML is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHTML requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHTML: %w", err)
+	}
+	return oldValue.ContentHTML, nil
+}
+
+// ClearContentHTML clears the value of the "content_html" field.
+func (m *PostMutation) ClearContentHTML() {
+	m.content_html = nil
+	m.clearedFields[post.FieldContentHTML] = struct{}{}
+}
+
+// ContentHTMLCleared returns if the "content_html" field was cleared in this mutation.
+func (m *PostMutation) ContentHTMLCleared() bool {
+	_, ok := m.clearedFields[post.FieldContentHTML]
+	return ok
+}
+
+// ResetContentHTML resets all changes to the "content_html" field.
+func (m *PostMutation) ResetContentHTML() {
+	m.content_html = nil
+	delete(m.clearedFields, post.FieldContentHTML)
+}
+
 // SetOtherByline sets the "other_byline" field.
 func (m *PostMutation) SetOtherByline(s string) {
 	m.other_byline = &s
@@ -4850,6 +4956,76 @@ func (m *PostMutation) PublishTimeCleared() bool {
 func (m *PostMutation) ResetPublishTime() {
 	m.publish_time = nil
 	delete(m.clearedFields, post.FieldPublishTime)
+}
+
+// SetRenderVersion sets the "render_version" field.
+func (m *PostMutation) SetRenderVersion(i int) {
+	m.render_version = &i
+	m.addrender_version = nil
+}
+
+// RenderVersion returns the value of the "render_version" field in the mutation.
+func (m *PostMutation) RenderVersion() (r int, exists bool) {
+	v := m.render_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRenderVersion returns the old "render_version" field's value of the Post entity.
+// If the Post object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PostMutation) OldRenderVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRenderVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRenderVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRenderVersion: %w", err)
+	}
+	return oldValue.RenderVersion, nil
+}
+
+// AddRenderVersion adds i to the "render_version" field.
+func (m *PostMutation) AddRenderVersion(i int) {
+	if m.addrender_version != nil {
+		*m.addrender_version += i
+	} else {
+		m.addrender_version = &i
+	}
+}
+
+// AddedRenderVersion returns the value that was added to the "render_version" field in this mutation.
+func (m *PostMutation) AddedRenderVersion() (r int, exists bool) {
+	v := m.addrender_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRenderVersion clears the value of the "render_version" field.
+func (m *PostMutation) ClearRenderVersion() {
+	m.render_version = nil
+	m.addrender_version = nil
+	m.clearedFields[post.FieldRenderVersion] = struct{}{}
+}
+
+// RenderVersionCleared returns if the "render_version" field was cleared in this mutation.
+func (m *PostMutation) RenderVersionCleared() bool {
+	_, ok := m.clearedFields[post.FieldRenderVersion]
+	return ok
+}
+
+// ResetRenderVersion resets all changes to the "render_version" field.
+func (m *PostMutation) ResetRenderVersion() {
+	m.render_version = nil
+	m.addrender_version = nil
+	delete(m.clearedFields, post.FieldRenderVersion)
 }
 
 // SetState sets the "state" field.
@@ -5340,7 +5516,7 @@ func (m *PostMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PostMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, post.FieldCreatedAt)
 	}
@@ -5353,11 +5529,17 @@ func (m *PostMutation) Fields() []string {
 	if m.content != nil {
 		fields = append(fields, post.FieldContent)
 	}
+	if m.content_html != nil {
+		fields = append(fields, post.FieldContentHTML)
+	}
 	if m.other_byline != nil {
 		fields = append(fields, post.FieldOtherByline)
 	}
 	if m.publish_time != nil {
 		fields = append(fields, post.FieldPublishTime)
+	}
+	if m.render_version != nil {
+		fields = append(fields, post.FieldRenderVersion)
 	}
 	if m.state != nil {
 		fields = append(fields, post.FieldState)
@@ -5384,10 +5566,14 @@ func (m *PostMutation) Field(name string) (ent.Value, bool) {
 		return m.Brief()
 	case post.FieldContent:
 		return m.Content()
+	case post.FieldContentHTML:
+		return m.ContentHTML()
 	case post.FieldOtherByline:
 		return m.OtherByline()
 	case post.FieldPublishTime:
 		return m.PublishTime()
+	case post.FieldRenderVersion:
+		return m.RenderVersion()
 	case post.FieldState:
 		return m.State()
 	case post.FieldSubtitle:
@@ -5411,10 +5597,14 @@ func (m *PostMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldBrief(ctx)
 	case post.FieldContent:
 		return m.OldContent(ctx)
+	case post.FieldContentHTML:
+		return m.OldContentHTML(ctx)
 	case post.FieldOtherByline:
 		return m.OldOtherByline(ctx)
 	case post.FieldPublishTime:
 		return m.OldPublishTime(ctx)
+	case post.FieldRenderVersion:
+		return m.OldRenderVersion(ctx)
 	case post.FieldState:
 		return m.OldState(ctx)
 	case post.FieldSubtitle:
@@ -5458,6 +5648,13 @@ func (m *PostMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetContent(v)
 		return nil
+	case post.FieldContentHTML:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHTML(v)
+		return nil
 	case post.FieldOtherByline:
 		v, ok := value.(string)
 		if !ok {
@@ -5471,6 +5668,13 @@ func (m *PostMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPublishTime(v)
+		return nil
+	case post.FieldRenderVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRenderVersion(v)
 		return nil
 	case post.FieldState:
 		v, ok := value.(post.State)
@@ -5500,13 +5704,21 @@ func (m *PostMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *PostMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addrender_version != nil {
+		fields = append(fields, post.FieldRenderVersion)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *PostMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case post.FieldRenderVersion:
+		return m.AddedRenderVersion()
+	}
 	return nil, false
 }
 
@@ -5515,6 +5727,13 @@ func (m *PostMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *PostMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case post.FieldRenderVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRenderVersion(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Post numeric field %s", name)
 }
@@ -5529,11 +5748,17 @@ func (m *PostMutation) ClearedFields() []string {
 	if m.FieldCleared(post.FieldContent) {
 		fields = append(fields, post.FieldContent)
 	}
+	if m.FieldCleared(post.FieldContentHTML) {
+		fields = append(fields, post.FieldContentHTML)
+	}
 	if m.FieldCleared(post.FieldOtherByline) {
 		fields = append(fields, post.FieldOtherByline)
 	}
 	if m.FieldCleared(post.FieldPublishTime) {
 		fields = append(fields, post.FieldPublishTime)
+	}
+	if m.FieldCleared(post.FieldRenderVersion) {
+		fields = append(fields, post.FieldRenderVersion)
 	}
 	if m.FieldCleared(post.FieldSubtitle) {
 		fields = append(fields, post.FieldSubtitle)
@@ -5558,11 +5783,17 @@ func (m *PostMutation) ClearField(name string) error {
 	case post.FieldContent:
 		m.ClearContent()
 		return nil
+	case post.FieldContentHTML:
+		m.ClearContentHTML()
+		return nil
 	case post.FieldOtherByline:
 		m.ClearOtherByline()
 		return nil
 	case post.FieldPublishTime:
 		m.ClearPublishTime()
+		return nil
+	case post.FieldRenderVersion:
+		m.ClearRenderVersion()
 		return nil
 	case post.FieldSubtitle:
 		m.ClearSubtitle()
@@ -5587,11 +5818,17 @@ func (m *PostMutation) ResetField(name string) error {
 	case post.FieldContent:
 		m.ResetContent()
 		return nil
+	case post.FieldContentHTML:
+		m.ResetContentHTML()
+		return nil
 	case post.FieldOtherByline:
 		m.ResetOtherByline()
 		return nil
 	case post.FieldPublishTime:
 		m.ResetPublishTime()
+		return nil
+	case post.FieldRenderVersion:
+		m.ResetRenderVersion()
 		return nil
 	case post.FieldState:
 		m.ResetState()

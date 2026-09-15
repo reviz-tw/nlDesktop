@@ -22,6 +22,8 @@ type ApiKey struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Scope holds the value of the "scope" field.
+	Scope apikey.Scope `json:"scope,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// KeyHash holds the value of the "key_hash" field.
@@ -62,7 +64,7 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apikey.FieldID:
 			values[i] = new(sql.NullInt64)
-		case apikey.FieldName, apikey.FieldKeyHash:
+		case apikey.FieldScope, apikey.FieldName, apikey.FieldKeyHash:
 			values[i] = new(sql.NullString)
 		case apikey.FieldCreatedAt, apikey.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -100,6 +102,12 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
+			}
+		case apikey.FieldScope:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field scope", values[i])
+			} else if value.Valid {
+				_m.Scope = apikey.Scope(value.String)
 			}
 		case apikey.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -166,6 +174,9 @@ func (_m *ApiKey) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("scope=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Scope))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)

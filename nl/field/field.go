@@ -42,6 +42,9 @@ type Opt func(*nl.Field)
 // Required 必填。
 func Required() Opt { return func(f *nl.Field) { f.Required = true } }
 
+// ReadOnly marks a server-derived field that clients may only read.
+func ReadOnly() Opt { return func(f *nl.Field) { f.ReadOnly = true } }
+
 // Unique 唯一。
 func Unique() Opt { return func(f *nl.Field) { f.Unique = true } }
 

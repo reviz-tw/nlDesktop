@@ -155,6 +155,26 @@ func UpdatedAtLTE(v time.Time) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
+// ScopeEQ applies the EQ predicate on the "scope" field.
+func ScopeEQ(v Scope) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldScope, v))
+}
+
+// ScopeNEQ applies the NEQ predicate on the "scope" field.
+func ScopeNEQ(v Scope) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNEQ(FieldScope, v))
+}
+
+// ScopeIn applies the In predicate on the "scope" field.
+func ScopeIn(vs ...Scope) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIn(FieldScope, vs...))
+}
+
+// ScopeNotIn applies the NotIn predicate on the "scope" field.
+func ScopeNotIn(vs ...Scope) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotIn(FieldScope, vs...))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldName, v))

@@ -49,6 +49,20 @@ func (_c *ApiKeyCreate) SetNillableUpdatedAt(v *time.Time) *ApiKeyCreate {
 	return _c
 }
 
+// SetScope sets the "scope" field.
+func (_c *ApiKeyCreate) SetScope(v apikey.Scope) *ApiKeyCreate {
+	_c.mutation.SetScope(v)
+	return _c
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_c *ApiKeyCreate) SetNillableScope(v *apikey.Scope) *ApiKeyCreate {
+	if v != nil {
+		_c.SetScope(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *ApiKeyCreate) SetName(v string) *ApiKeyCreate {
 	_c.mutation.SetName(v)
@@ -115,6 +129,10 @@ func (_c *ApiKeyCreate) defaults() {
 		v := apikey.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Scope(); !ok {
+		v := apikey.DefaultScope
+		_c.mutation.SetScope(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -124,6 +142,14 @@ func (_c *ApiKeyCreate) check() error {
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ApiKey.updated_at"`)}
+	}
+	if _, ok := _c.mutation.Scope(); !ok {
+		return &ValidationError{Name: "scope", err: errors.New(`ent: missing required field "ApiKey.scope"`)}
+	}
+	if v, ok := _c.mutation.Scope(); ok {
+		if err := apikey.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "ApiKey.scope": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "ApiKey.name"`)}
@@ -177,6 +203,10 @@ func (_c *ApiKeyCreate) createSpec() (*ApiKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(apikey.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := _c.mutation.Scope(); ok {
+		_spec.SetField(apikey.FieldScope, field.TypeEnum, value)
+		_node.Scope = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)

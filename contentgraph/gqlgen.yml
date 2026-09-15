@@ -1,0 +1,22 @@
+schema:
+  - contentgraph/schema.graphqls
+exec:
+  filename: contentgraph/generated.go
+  package: contentgraph
+model:
+  filename: contentgraph/model/models_gen.go
+  package: model
+resolver:
+  layout: follow-schema
+  dir: contentgraph
+  package: contentgraph
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.IntID
+  Time:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time
+  JSON:
+    model:
+      - github.com/99designs/gqlgen/graphql.Map

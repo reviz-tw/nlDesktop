@@ -16,3 +16,10 @@ type AuthPayload struct {
 	Token string    `json:"token"`
 	User  *ent.User `json:"user"`
 }
+
+// 網站專用金鑰；key 僅簽發時回傳，id 用於撤銷。
+type ContentAPIKeyPayload struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
