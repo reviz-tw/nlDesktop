@@ -70,6 +70,7 @@ steps:
       - '--image=asia-east1-docker.pkg.dev/$PROJECT_ID/nl/nl:${BRANCH_NAME}_${SHORT_SHA}'
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
+      - '--service-account=${_SERVICE_ACCOUNT}'
       - '--set-env-vars=NL_AUTO_MIGRATE=true'
       - '--set-secrets=DATABASE_URL=nl-database-url:latest,NL_SESSION_SECRET=nl-session-secret:latest'
       - '--add-cloudsql-instances=${_CLOUDSQL_INSTANCE}'
@@ -91,8 +92,9 @@ steps:
 substitutions:
   _ENV: dev
   _REGION: asia-east1
+  _SERVICE_ACCOUNT: 'reviz-run@reviz-500908.iam.gserviceaccount.com'
   # Cloud SQL instance connection name（project:region:instance）
-  _CLOUDSQL_INSTANCE: ''
+  _CLOUDSQL_INSTANCE: 'elix-498805:asia-east1:elix-dev'
   # 首次部署後回填實際的 Cloud Run URLs
   _CMS_URL: 'https://nl-server-dev.example.run.app'
   _RICHTEXT_URL: 'https://nl-converter-dev.example.run.app'
