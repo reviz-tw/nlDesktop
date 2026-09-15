@@ -60,6 +60,7 @@ steps:
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
       - '--service-account=${_SERVICE_ACCOUNT}'
+      - '--min-instances=0'
 
   # Deploy nl-server（GraphQL + Admin UI + OAuth；dev 啟動時自動 migration）
   - name: gcr.io/cloud-builders/gcloud
@@ -72,6 +73,7 @@ steps:
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
       - '--service-account=${_SERVICE_ACCOUNT}'
+      - '--min-instances=0'
       - '--set-env-vars=NL_AUTO_MIGRATE=true'
       - '--set-secrets=DATABASE_URL=nl-database-url:latest,NL_SESSION_SECRET=nl-session-secret:latest'
       - '--add-cloudsql-instances=${_CLOUDSQL_INSTANCE}'
@@ -87,6 +89,7 @@ steps:
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
       - '--service-account=${_SERVICE_ACCOUNT}'
+      - '--min-instances=0'
       - '--command=/bin/sh'
       - '--args=-c,exec /app/nl-mcp -http :$${PORT:-8080}'
       - '--set-env-vars=NL_GRAPHQL_URL=${_CMS_URL}/graphql,NL_CMS_URL=${_CMS_URL},NL_RICHTEXT_URL=${_RICHTEXT_URL}'
