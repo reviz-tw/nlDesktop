@@ -59,6 +59,7 @@ steps:
       - '--image=asia-east1-docker.pkg.dev/$PROJECT_ID/nl/nl-converter:${BRANCH_NAME}_${SHORT_SHA}'
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
+      - '--service-account=${_SERVICE_ACCOUNT}'
 
   # Deploy nl-server（GraphQL + Admin UI + OAuth；dev 啟動時自動 migration）
   - name: gcr.io/cloud-builders/gcloud
@@ -85,6 +86,7 @@ steps:
       - '--image=asia-east1-docker.pkg.dev/$PROJECT_ID/nl/nl:${BRANCH_NAME}_${SHORT_SHA}'
       - '--region=${_REGION}'
       - '--allow-unauthenticated'
+      - '--service-account=${_SERVICE_ACCOUNT}'
       - '--command=/bin/sh'
       - '--args=-c,exec /app/nl-mcp -http :$${PORT:-8080}'
       - '--set-env-vars=NL_GRAPHQL_URL=${_CMS_URL}/graphql,NL_CMS_URL=${_CMS_URL},NL_RICHTEXT_URL=${_RICHTEXT_URL}'
