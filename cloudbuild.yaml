@@ -98,8 +98,8 @@ substitutions:
   # Cloud SQL instance connection name（project:region:instance）
   _CLOUDSQL_INSTANCE: 'elix-498805:asia-east1:elix-dev'
   # 首次部署後回填實際的 Cloud Run URLs
-  _CMS_URL: 'https://nl-server-dev.example.run.app'
-  _RICHTEXT_URL: 'https://nl-converter-dev.example.run.app'
+  _CMS_URL: 'https://nl-server-dev-448719938843.asia-east1.run.app'
+  _RICHTEXT_URL: 'https://nl-converter-dev-448719938843.asia-east1.run.app'
 
 images:
   - 'asia-east1-docker.pkg.dev/$PROJECT_ID/nl/nl:${BRANCH_NAME}_${SHORT_SHA}'
